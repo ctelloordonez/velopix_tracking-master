@@ -71,7 +71,8 @@ def print_event_2d(event, tracks=[], x=2, y=0, track_color=0, filename="visual.p
 
     for i, m in enumerate(event.modules):
       limit = limits[i % 2]
-      rect = mpatches.Rectangle((min(m.z)-shift,limit[0]),max(m.z)-min(m.z)+2*shift,limit[1],edgecolor=grey_color,facecolor=grey_color,alpha=0.4)
+      zs = event.module_zs[i]
+      rect = mpatches.Rectangle((min(zs)-shift,limit[0]),max(zs)-min(zs)+2*shift,limit[1],edgecolor=grey_color,facecolor=grey_color,alpha=0.4)
       ax.add_patch(rect)
 
     plt.scatter(
