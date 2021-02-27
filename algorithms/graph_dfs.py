@@ -1,4 +1,8 @@
+import copy
+
 from event_model import *
+from event_model.event_model import track
+
 
 class segment(object):
   '''A segment for the graph dfs.'''
@@ -274,7 +278,7 @@ class graph_dfs(object):
     #    and update their hit_number.
     
     # Work with a copy of event
-    event_copy = event.copy()
+    event_copy = copy.deepcopy(event)
     self.order_hits(event_copy)
 
     # 1. Fill candidates
