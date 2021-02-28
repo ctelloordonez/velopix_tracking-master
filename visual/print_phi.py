@@ -63,7 +63,7 @@ def print_event_2d_phi(event, tracks=[], track_color=0, filename="event_phi"):
       linewidth=4
     )
 
-  # Print X versus Phi
+  # Print X versus Phi  # TODO: Print "X" or "Z"?
   plt.scatter(
     [h[2] for h in event.hits if h.module_number % 2 == 1],
     [hit_phi(h) for h in event.hits if h.module_number % 2 == 1],
@@ -80,7 +80,7 @@ def print_event_2d_phi(event, tracks=[], track_color=0, filename="event_phi"):
   #   )
 
   plt.tick_params(axis='both', which='major', labelsize=4*scale)
-  plt.xlabel("Z", fontdict={'fontsize': 4*scale})
+  plt.xlabel("Z", fontdict={'fontsize': 4*scale})   # TODO: label "Z"?
   plt.ylabel("φ", fontdict={'fontsize': 4*scale}, rotation='horizontal')
 
   plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
