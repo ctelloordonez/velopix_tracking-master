@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
-import event_model as em
-import validator_lite as vl
+import event_model.event_model as em
+import validator.validator_lite as vl
 import json
 
 # Solvers
-from graph_dfs import graph_dfs
-from classical_solver import classical_solver
+from algorithms.graph_dfs import graph_dfs
+from algorithms.track_following import track_following
 solutions = {}
 
 # Get an event
@@ -19,8 +19,8 @@ for s_number in range(0, event.number_of_modules):
   event.modules[s_number].z = event.modules[s_number].hits()[0].z
 
 # Solve with the classic method
-classical = classical_solver()
-solutions["classic"] = classical.solve(event)
+track_following = track_following()
+solutions["classic"] = track_following.solve(event)
 
 # Solve with the DFS method
 dfs = graph_dfs(
@@ -32,4 +32,5 @@ dfs = graph_dfs(
 solutions["dfs"] = dfs.solve(event)
 
 from visual.print_phi import print_event_2d_phi
-print_event_2d_phi(event, solutions["classic"], filename="event_phi")
+print_event_2d_phi(event, solutions["classic"], filename="event_phi_classic")
+print_event_2d_phi(event, solutions["dfs"], filename="event_phi_dfs")
