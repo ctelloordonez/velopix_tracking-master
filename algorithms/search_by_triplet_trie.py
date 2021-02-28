@@ -1,9 +1,9 @@
 import sys
 sys.path.append("../")
 
-import validator_lite as vl
+import validator.validator_lite as vl
 import json
-from event_model import *
+from event_model.event_model import *
 
 # Constants
 max_scatter = 0.1
@@ -73,7 +73,7 @@ for event_number in range(0, 1):
   print(".", end="")
   sys.stdout.flush()
   # Get an event
-  f = open("../velojson/" + str(event_number) + ".json")
+  f = open("../events/velo_event_" + str(event_number) + ".json")
   json_data = json.loads(f.read())
   ev = event(json_data)
   f.close()

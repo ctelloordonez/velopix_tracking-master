@@ -10,7 +10,7 @@ from algorithms.track_following import track_following
 solutions = {}
 
 # Get an event
-f = open("velojson/0.json")
+f = open("../events/velo_event_0.json")
 json_data = json.loads(f.read())
 event = em.event(json_data)
 f.close()
