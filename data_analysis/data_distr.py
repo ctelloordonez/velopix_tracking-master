@@ -1,9 +1,12 @@
+import sys
+sys.path.append('')
 from event_model import event_model as em
 import os
 import json
 import matplotlib.pyplot as plt
 import numpy as np
 import colorsys
+
 
 # Solvers
 from algorithms.track_following import track_following
@@ -52,6 +55,7 @@ dist = lambda hit: np.sqrt(hit.x**2 + hit.y**2 + hit.z**2)
 
 
 # Use "min()" for closest (first) hits, use "max()" for furthest (last) hits
+# XXX not sure about this here -> who sais that the firt element in the list must be closest to origin... could well be
 closest_hits = [min(track, key=dist) for track in total_track_hits]
 plt.hist([hit.z for hit in closest_hits])
 plt.title("Histogram of z-coordinates for first hits in tracks for 10 events")
