@@ -29,6 +29,86 @@ plotscale = 1.5
 
 ntox = {0:'X', 1:'Y', 2:'Z'}
 
+
+def print_clustered_2d(event, tracks=[], bins=[], x=2, y=0, track_color=0, filename='cluster.png', save_to_file=False, modules=[], with_modules=True):
+  """
+  A function to print events. It produces a 2D plot
+  and either prints or saves it to a file.
+
+  Arguments
+  ---------
+
+  event : the event to be printed
+  modules : list of modules to be printed
+  tracks : tracks to print
+  bins : particles organized by cluster bins
+  track_color : color of tracks (in 0-20 range)
+  x : index to be used as x axis
+  y : index to be used as y axis
+  save_to_file : switches between saving output to file or showing it (default)
+  filename : file where to save visualization
+  """
+  limits = ((24, -74), (-24, 74))
+  shift = 0.5
+
+  if modules:
+    fig = plt.figure()
+    ax = plt.axes()
+
+    for i in modules:
+      m = event.modules[i]
+      limit = limits[i % 2]
+      rect = mpatches.Rectangle((min(m.z) - shift, limit[0]), max(m.z) - min(m.z) + 2 * shift, limit[1],
+                                edgecolor=grey_color, facecolor=grey_color, alpha=0.4)
+      ax.add_patch(rect)
+
+    for b, bin in enumerate(bins):
+      plt.scatter(
+        [h[x] for h in bin if h.module_number in modules],
+        [h[y] for h in bin if h.module_number in modules],
+        color=colors[b*2],
+        s=2 * scale
+      )
+
+  else:
+    fig = plt.figure(figsize=(16 * plotscale, 9 * plotscale))
+    ax = plt.axes()
+
+    if with_modules:
+      for i, m in enumerate(event.modules):
+        limit = limits[i % 2]
+        zs = event.module_zs[i]
+        rect = mpatches.Rectangle((min(zs) - shift, limit[0]), max(zs) - min(zs) + 2 * shift, limit[1],
+                                  edgecolor=grey_color, facecolor=grey_color, alpha=0.4)
+        ax.add_patch(rect)
+
+    for b, bin in enumerate(bins):
+      plt.scatter(
+        [h[x] for h in bin],
+        [h[y] for h in bin],
+        color=colors[b*2],
+        s=2 * scale
+      )
+
+  for t in tracks:
+    plt.plot(
+      [h[x] for h in t.hits],
+      [h[y] for h in t.hits],
+      color=colors[track_color],
+      linewidth=1
+    )
+
+  plt.tick_params(axis='both', which='major', labelsize=4 * scale)
+  plt.xlabel(ntox[x], fontdict={'fontsize': 4 * scale})
+  plt.ylabel(ntox[y], fontdict={'fontsize': 4 * scale}, rotation='horizontal')
+
+  if save_to_file:
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+  else:
+    plt.show()
+
+
 def print_event_2d(event, tracks=[], x=2, y=0, track_color=0, filename="visual.png", save_to_file=False, modules=[]):
   """
   A function to print events. It produces a 2D plot
