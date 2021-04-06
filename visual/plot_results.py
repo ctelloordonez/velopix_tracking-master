@@ -7,6 +7,8 @@ import json
 # Solvers
 from algorithms.graph_dfs import graph_dfs
 from algorithms.track_following import track_following
+from algorithms.clustering import clustering, tracks_from_data
+
 solutions = {}
 
 # Get an event
@@ -37,3 +39,9 @@ print_event_2d(event, solutions["track_following"], y=1, filename="classic_solut
 
 print_event_2d(event, solutions["dfs"], filename="dfs_solution_xz.png", track_color=4, save_to_file=True)
 print_event_2d(event, solutions["dfs"], y=1, filename="dfs_solution_yz.png", track_color=4, save_to_file=True)
+solutions["clustering"] = tracks_from_data(json_data=json_data)
+bins = clustering.get_bins(event)
+
+from visual.base import print_clustered_2d
+print_clustered_2d(event, solutions["clustering"], bins, filename="clustering_solution_xz", save_to_file=True)
+print_clustered_2d(event, solutions["clustering"], bins, y=1, filename="clustering_solution_yz", save_to_file=True)
