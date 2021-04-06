@@ -12,7 +12,7 @@ from algorithms.clustering import clustering, tracks_from_data
 solutions = {}
 
 # Get an event
-f = open("../events/velo_event_0.json")
+f = open("../events/small_dataset/velo_event_0.json")
 json_data = json.loads(f.read())
 event = em.event(json_data)
 f.close()
