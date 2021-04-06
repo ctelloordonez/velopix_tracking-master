@@ -1,10 +1,7 @@
-import copy
 import math
 
-from event_model.event_model import hit, track
 
-
-class clustering:
+class Clustering:
     def __init__(self, K=4):
         self.bins_count = K
         self.bins = [[] for i in range(self.bins_count)]
@@ -24,17 +21,3 @@ def get_polar_coordinates(x, y):
     if phi < 0:
         phi = math.pi - phi
     return r, phi
-
-
-def tracks_from_data(json_data):
-    tracks = []
-    hits = []
-    for hid, (x, y, z) in enumerate(zip(json_data["x"], json_data["y"], json_data["z"])):
-        hits.append(hit(x, y, z, hid))
-    description = json_data["montecarlo"]["description"]
-    particles = json_data["montecarlo"]["particles"]
-    for p in particles:
-        d = {description[i]: p[i] for i in range(len(description))}
-        trackhits = [hits[hit_number] for hit_number in d["hits"]]
-        tracks.append(track(trackhits))
-    return tracks
