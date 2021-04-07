@@ -144,6 +144,44 @@ def distribution_of_noise():
   plt.show()
 
 
+def noise_histogram():
+  events_noise = []
+  for (dirpath, dirnames, filenames) in os.walk("../events/minibias"):
+    for i, filename in enumerate(filenames):
+      # Get an event
+      print(f'opening: {filename}')
+      f = open(os.path.realpath(os.path.join(dirpath, filename)))
+      json_data = json.loads(f.read())
+      event = em.event(json_data)
+      f.close()
+
+      events_noise.append(noise_from_data(json_data=json_data))
+      print(f'{filename} closed')
+
+  x = np.array(events_noise)
+  plt.hist(x, bins=100)
+  plt.show()
+
+
+def tracks_histogram():
+  events_tracks = []
+  for (dirpath, dirnames, filenames) in os.walk("../events/bsphiphi"):
+    for i, filename in enumerate(filenames):
+      # Get an event
+      print(f'opening: {filename}')
+      f = open(os.path.realpath(os.path.join(dirpath, filename)))
+      json_data = json.loads(f.read())
+      event = em.event(json_data)
+      f.close()
+      print(f'{filename} closed')
+
+      events_tracks.append(len(tracks_from_data(json_data=json_data)))
+
+  x = np.array(events_tracks)
+  plt.hist(x, bins=get_bins(x))
+  plt.show()
+
+
 def tracks_by_noise():
   events_noise = []
   events_tracks = []
@@ -158,15 +196,19 @@ def tracks_by_noise():
       print(f'{filename} closed')
 
       events_noise.append(noise_from_data(json_data=json_data))
-      events_tracks.append(tracks_from_data(json_data=json_data))
+      events_tracks.append(len(tracks_from_data(json_data=json_data)))
 
+  x = np.array(events_tracks)
+  y = np.array(events_noise)
 
-  for e in range(len(events_noise)):
-    print(f'Event{e}: {len(events_tracks[e])}, {events_noise[e]}')
-    plt.scatter(len(events_tracks[e]), events_noise[e], c='b')
+  plt.scatter(x, y, s=1, marker='o')
+
+  m, b = np.polyfit(x, y, 1)
+  plt.plot(x, m*x + b, c='y', linewidth=0.5)
+
   plt.xlabel('#tracks')
   plt.ylabel('#noise')
-  plt.title('#tracks by #noise on 10 events')
+  plt.title('#tracks by #noise on bsphiphi')
   plt.grid(True)
   plt.show()
 
@@ -201,8 +243,12 @@ def track_origin_analysis():
     print(p)
 
 
-track_origin_analysis()
-# tracks_by_noise()
-# distribution_of_tracks()
-# distribution_of_noise()
+def get_bins(x):
+    q25, q75 = np.percentile(x, [.25, .75])
+    bin_width = 2 * (q75 - q25) * len(x) ** (-1 / 3)
+    bins = round((x.max() - x.min()) / bin_width)
+    print("Freedman–Diaconis number of bins:", bins)
+    return bins
 
+
+tracks_histogram()
