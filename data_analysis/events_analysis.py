@@ -65,7 +65,7 @@ def origins_from_data(json_data, limit=False):
 
 def distribution_of_tracks():
   events_tracks = []
-  for (dirpath, dirnames, filenames) in os.walk("../events"):
+  for (dirpath, dirnames, filenames) in os.walk("../events/small_dataset"):
     for i, filename in enumerate(filenames):
       # Get an event
       f = open(os.path.realpath(os.path.join(dirpath, filename)))
@@ -104,15 +104,18 @@ def distribution_of_tracks():
 
 def distribution_of_noise():
   events_noise = []
-  for (dirpath, dirnames, filenames) in os.walk("../events"):
+  for (dirpath, dirnames, filenames) in os.walk("../events/minibias"):
     for i, filename in enumerate(filenames):
       # Get an event
+      print(f'opening: {filename}')
       f = open(os.path.realpath(os.path.join(dirpath, filename)))
       json_data = json.loads(f.read())
       event = em.event(json_data)
       f.close()
 
       events_noise.append(noise_from_data(json_data=json_data))
+      print(f'{filename} closed')
+
   total_noise = 0
   for event in events_noise:
     total_noise += event
@@ -144,13 +147,15 @@ def distribution_of_noise():
 def tracks_by_noise():
   events_noise = []
   events_tracks = []
-  for (dirpath, dirnames, filenames) in os.walk("../events"):
+  for (dirpath, dirnames, filenames) in os.walk("../events/bsphiphi"):
     for i, filename in enumerate(filenames):
       # Get an event
+      print(f'opening: {filename}')
       f = open(os.path.realpath(os.path.join(dirpath, filename)))
       json_data = json.loads(f.read())
       event = em.event(json_data)
       f.close()
+      print(f'{filename} closed')
 
       events_noise.append(noise_from_data(json_data=json_data))
       events_tracks.append(tracks_from_data(json_data=json_data))
@@ -169,7 +174,7 @@ def tracks_by_noise():
 def track_origin_analysis():
   events_origins = []
   events_origins_limited = []
-  for (dirpath, dirnames, filenames) in os.walk("../events"):
+  for (dirpath, dirnames, filenames) in os.walk("../events/small_dataset"):
     for i, filename in enumerate(filenames):
       # Get an event
       f = open(os.path.realpath(os.path.join(dirpath, filename)))
