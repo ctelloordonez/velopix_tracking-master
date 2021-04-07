@@ -10,6 +10,30 @@ import event_model.event_model as em
 from validator.validator_lite import MCParticle
 
 
+# ----------------------------------- UTILS ------------------------------------------------
+def get_bins(x):
+    q25, q75 = np.percentile(x, [.25, .75])
+    bin_width = 2 * (q75 - q25) * len(x) ** (-1 / 3)
+    bins = round((x.max() - x.min()) / bin_width)
+    print("Freedman–Diaconis number of bins:", bins)
+    return bins
+
+
+def get_json_data_from_folder(data_set_folder):
+    jsons = []
+    for (dirpath, dirnames, filenames) in os.walk(f"../events/{data_set_folder}"):
+        for i, filename in enumerate(filenames):
+            # Get an event
+            print(f'opening: {filename}')
+            f = open(os.path.realpath(os.path.join(dirpath, filename)))
+            json_data = json.loads(f.read())
+            event = em.event(json_data)
+            f.close()
+
+            jsons.append(json_data)
+    return jsons
+
+
 def tracks_from_data(json_data):
     tracks = []
     hits = []
@@ -61,102 +85,71 @@ def origins_from_data(json_data, limit=False):
             origins.append(track_hits[0])
 
     return origins
+# ----------------------------------- UTILS ------------------------------------------------
 
 
-def distribution_of_tracks():
-    events_tracks = []
-    for (dirpath, dirnames, filenames) in os.walk("../events/small_dataset"):
-        for i, filename in enumerate(filenames):
-            # Get an event
-            f = open(os.path.realpath(os.path.join(dirpath, filename)))
-            json_data = json.loads(f.read())
-            event = em.event(json_data)
-            f.close()
+# ----------------------------------- PLOTS ------------------------------------------------
+def data_distribution(data):
+    total = 0
+    for num in data:
+        total += num
 
-            events_tracks.append(tracks_from_data(json_data=json_data))
-    total_tracks = 0
-    for event in events_tracks:
-        total_tracks += len(event)
-
-    mu = total_tracks / len(events_tracks)
+    mu = total / len(data)
 
     aux = 0
-    for event in events_tracks:
-        aux += ((len(event) - mu) ** 2)
+    for num in data:
+        aux += ((num - mu) ** 2)
 
-    variance = aux / len(events_tracks)
-
+    variance = aux / len(data)
     sigma = math.sqrt(variance)
 
     print(f'Mean: {mu}')
     print(f'Variance: {variance}')
     print(f'Standard deviation: {sigma}')
 
-    x = np.linspace(mu - 4*sigma, mu + 4*sigma, 100)
+    return mu, variance, sigma
+
+
+def plot_distribution(mu, sigma, title='Distribution'):
+    x = np.linspace(mu - 4 * sigma, mu + 4 * sigma, 100)
     plt.plot(x, stats.norm.pdf(x, mu, sigma), label='pdf')
-    plt.title('Distribution of #tracks over 10 events')
-    plt.text(-300, .0020, fr'$\mu={mu},\ \sigma={round(sigma, 4)}$')
+    plt.title(title)
+    plt.text(-300, .0020, fr'$\mu={round(mu, 4)},\ \sigma={round(sigma, 4)}$')
     # plt.plot(x, stats.norm.cdf(x, mu, sigma), label='cdf')
     plt.legend()
     plt.grid(True)
     plt.show()
+# ----------------------------------- PLOTS ------------------------------------------------
+
+
+# ------------------------------- DATA ANALYSIS --------------------------------------------
+def distribution_of_tracks():
+    events_tracks = []
+
+    jsons = get_json_data_from_folder(data_set)
+    for json_data in jsons:
+        events_tracks.append(len(tracks_from_data(json_data=json_data)))
+
+    mu, variance, sigma = data_distribution(events_tracks)
+    plot_distribution(mu, sigma, f'Distribution of #tracks in {data_set}')
 
 
 def distribution_of_noise():
     events_noise = []
-    for (dirpath, dirnames, filenames) in os.walk("../events/minibias"):
-        for i, filename in enumerate(filenames):
-            # Get an event
-            print(f'opening: {filename}')
-            f = open(os.path.realpath(os.path.join(dirpath, filename)))
-            json_data = json.loads(f.read())
-            event = em.event(json_data)
-            f.close()
 
-            events_noise.append(noise_from_data(json_data=json_data))
-            print(f'{filename} closed')
+    jsons = get_json_data_from_folder(data_set)
+    for json_data in jsons:
+        events_noise.append(noise_from_data(json_data=json_data))
 
-    total_noise = 0
-    for event in events_noise:
-        total_noise += event
-
-    mu = total_noise / len(events_noise)
-
-    aux = 0
-    for event in events_noise:
-        aux += ((event - mu) ** 2)
-
-    variance = aux / len(events_noise)
-
-    sigma = math.sqrt(variance)
-
-    print(f'Mean: {mu}')
-    print(f'Variance: {variance}')
-    print(f'Standard deviation: {sigma}')
-
-    x = np.linspace(mu - 4 * sigma, mu + 4 * sigma, 100)
-    plt.plot(x, stats.norm.pdf(x, mu, sigma), label='pdf')
-    plt.title('Distribution of #noise over 10 events')
-    plt.text(-250, .0025, fr'$\mu={mu},\ \sigma={round(sigma, 4)}$')
-    # plt.plot(x, stats.norm.cdf(x, mu, sigma), label='cdf')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    mu, variance, sigma = data_distribution(events_noise)
+    plot_distribution(mu, sigma, f'Distribution of #noise in {data_set}')
 
 
 def noise_histogram():
     events_noise = []
-    for (dirpath, dirnames, filenames) in os.walk("../events/minibias"):
-        for i, filename in enumerate(filenames):
-            # Get an event
-            print(f'opening: {filename}')
-            f = open(os.path.realpath(os.path.join(dirpath, filename)))
-            json_data = json.loads(f.read())
-            event = em.event(json_data)
-            f.close()
-
-            events_noise.append(noise_from_data(json_data=json_data))
-            print(f'{filename} closed')
+    jsons = get_json_data_from_folder(data_set)
+    for json_data in jsons:
+        events_noise.append(noise_from_data(json_data=json_data))
 
     x = np.array(events_noise)
     plt.hist(x, bins=100)
@@ -165,17 +158,9 @@ def noise_histogram():
 
 def tracks_histogram():
     events_tracks = []
-    for (dirpath, dirnames, filenames) in os.walk("../events/bsphiphi"):
-        for i, filename in enumerate(filenames):
-            # Get an event
-            print(f'opening: {filename}')
-            f = open(os.path.realpath(os.path.join(dirpath, filename)))
-            json_data = json.loads(f.read())
-            event = em.event(json_data)
-            f.close()
-            print(f'{filename} closed')
-
-            events_tracks.append(len(tracks_from_data(json_data=json_data)))
+    jsons = get_json_data_from_folder(data_set)
+    for json_data in jsons:
+        events_tracks.append(len(tracks_from_data(json_data=json_data)))
 
     x = np.array(events_tracks)
     plt.hist(x, bins=get_bins(x))
@@ -185,18 +170,11 @@ def tracks_histogram():
 def tracks_by_noise():
     events_noise = []
     events_tracks = []
-    for (dirpath, dirnames, filenames) in os.walk("../events/bsphiphi"):
-        for i, filename in enumerate(filenames):
-            # Get an event
-            print(f'opening: {filename}')
-            f = open(os.path.realpath(os.path.join(dirpath, filename)))
-            json_data = json.loads(f.read())
-            event = em.event(json_data)
-            f.close()
-            print(f'{filename} closed')
 
-            events_noise.append(noise_from_data(json_data=json_data))
-            events_tracks.append(len(tracks_from_data(json_data=json_data)))
+    jsons = get_json_data_from_folder(data_set)
+    for json_data in jsons:
+        events_noise.append(noise_from_data(json_data=json_data))
+        events_tracks.append(len(tracks_from_data(json_data=json_data)))
 
     x = np.array(events_tracks)
     y = np.array(events_noise)
@@ -208,7 +186,7 @@ def tracks_by_noise():
 
     plt.xlabel('#tracks')
     plt.ylabel('#noise')
-    plt.title('#tracks by #noise on bsphiphi')
+    plt.title(f'#tracks by #noise on {data_set}')
     plt.grid(True)
     plt.show()
 
@@ -216,16 +194,11 @@ def tracks_by_noise():
 def track_origin_analysis():
     events_origins = []
     events_origins_limited = []
-    for (dirpath, dirnames, filenames) in os.walk("../events/small_dataset"):
-        for i, filename in enumerate(filenames):
-            # Get an event
-            f = open(os.path.realpath(os.path.join(dirpath, filename)))
-            json_data = json.loads(f.read())
-            event = em.event(json_data)
-            f.close()
 
-            events_origins.append(origins_from_data(json_data=json_data))
-            events_origins_limited.append(origins_from_data(json_data=json_data, limit=True))
+    jsons = get_json_data_from_folder(data_set)
+    for json_data in jsons:
+        events_origins.append(origins_from_data(json_data=json_data))
+        events_origins_limited.append(origins_from_data(json_data=json_data, limit=True))
 
     total_origins = 0
     events_origin_means = []
@@ -241,14 +214,8 @@ def track_origin_analysis():
 
     for p in percentages:
         print(p)
+# ------------------------------- DATA ANALYSIS --------------------------------------------
 
 
-def get_bins(x):
-    q25, q75 = np.percentile(x, [.25, .75])
-    bin_width = 2 * (q75 - q25) * len(x) ** (-1 / 3)
-    bins = round((x.max() - x.min()) / bin_width)
-    print("Freedman–Diaconis number of bins:", bins)
-    return bins
-
-
-tracks_histogram()
+data_set = "small_dataset"
+distribution_of_noise()
