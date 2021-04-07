@@ -110,7 +110,7 @@ def data_distribution(data):
     return mu, variance, sigma
 
 
-def plot_distribution(mu, sigma, title='Distribution'):
+def plot_distribution(mu, sigma, title='Distribution', safe_to_file=False):
     x = np.linspace(mu - 4 * sigma, mu + 4 * sigma, 100)
     plt.plot(x, stats.norm.pdf(x, mu, sigma), label='pdf')
     plt.title(title)
@@ -118,12 +118,51 @@ def plot_distribution(mu, sigma, title='Distribution'):
     # plt.plot(x, stats.norm.cdf(x, mu, sigma), label='cdf')
     plt.legend()
     plt.grid(True)
-    plt.show()
+    if safe_to_file:
+        plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_density_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_file=False):
+    x = np.array(data)
+    plt.hist(x, density=True, bins=get_bins(x), label="Data")
+
+    mn, mx = plt.xlim()
+    plt.xlim(mn, mx)
+    kde_xs = np.linspace(mn, mx, 300)
+    kde = stats.gaussian_kde(x)
+    plt.plot(kde_xs, kde.pdf(kde_xs), label="PDF")
+
+    plt.legend(loc="upper left")
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.title(title)
+    if safe_to_file:
+        plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_file=False):
+    x = np.array(data)
+    plt.hist(x, bins=get_bins(x), label="Data")
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.title(title)
+    if safe_to_file:
+        plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
 # ----------------------------------- PLOTS ------------------------------------------------
 
 
 # ------------------------------- DATA ANALYSIS --------------------------------------------
-def distribution_of_tracks():
+def distribution_of_tracks(safe_to_file=False):
     events_tracks = []
 
     jsons = get_json_data_from_folder(data_set)
@@ -131,10 +170,10 @@ def distribution_of_tracks():
         events_tracks.append(len(tracks_from_data(json_data=json_data)))
 
     mu, variance, sigma = data_distribution(events_tracks)
-    plot_distribution(mu, sigma, f'Distribution of #tracks in {data_set}')
+    plot_distribution(mu, sigma, f'Distribution of #tracks in {data_set}', safe_to_file=safe_to_file)
 
 
-def distribution_of_noise():
+def distribution_of_noise(safe_to_file=False):
     events_noise = []
 
     jsons = get_json_data_from_folder(data_set)
@@ -142,32 +181,37 @@ def distribution_of_noise():
         events_noise.append(noise_from_data(json_data=json_data))
 
     mu, variance, sigma = data_distribution(events_noise)
-    plot_distribution(mu, sigma, f'Distribution of #noise in {data_set}')
+    plot_distribution(mu, sigma, f'Distribution of #noise in {data_set}', safe_to_file=safe_to_file)
 
 
-def noise_histogram():
+def noise_histogram(density=False, safe_to_file=False):
     events_noise = []
+
     jsons = get_json_data_from_folder(data_set)
     for json_data in jsons:
         events_noise.append(noise_from_data(json_data=json_data))
 
-    x = np.array(events_noise)
-    plt.hist(x, bins=100)
-    plt.show()
+    if density:
+        plot_density_histogram(events_noise, title=f'#noise density histogram in {data_set}', xlabel="#noise",
+                               ylabel="Probability", safe_to_file=safe_to_file)
+    else:
+        plot_histogram(events_noise, title=f'#noise histogram in {data_set}', xlabel="#noise", safe_to_file=safe_to_file)
 
 
-def tracks_histogram():
+def tracks_histogram(density=False, safe_to_file=False):
     events_tracks = []
     jsons = get_json_data_from_folder(data_set)
     for json_data in jsons:
         events_tracks.append(len(tracks_from_data(json_data=json_data)))
 
-    x = np.array(events_tracks)
-    plt.hist(x, bins=get_bins(x))
-    plt.show()
+    if density:
+        plot_density_histogram(events_tracks, title=f'#tracks density histogram in {data_set}', xlabel="#tracks",
+                               ylabel="Probability", safe_to_file=safe_to_file)
+    else:
+        plot_histogram(events_tracks, title=f'#tracks histogram in {data_set}', xlabel="#tracks", safe_to_file=safe_to_file)
 
 
-def tracks_by_noise():
+def tracks_by_noise(safe_to_file=False):
     events_noise = []
     events_tracks = []
 
@@ -186,9 +230,14 @@ def tracks_by_noise():
 
     plt.xlabel('#tracks')
     plt.ylabel('#noise')
-    plt.title(f'#tracks by #noise on {data_set}')
+    title = f'#tracks by #noise on {data_set}'
+    plt.title(title)
     plt.grid(True)
-    plt.show()
+    if safe_to_file:
+        plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
 
 
 def track_origin_analysis():
@@ -217,5 +266,26 @@ def track_origin_analysis():
 # ------------------------------- DATA ANALYSIS --------------------------------------------
 
 
-data_set = "small_dataset"
-distribution_of_noise()
+data_set = "minibias"
+
+distribution_of_noise(safe_to_file=True)
+noise_histogram(safe_to_file=True)
+noise_histogram(density=True, safe_to_file=True)
+
+distribution_of_tracks(safe_to_file=True)
+tracks_histogram(safe_to_file=True)
+tracks_histogram(density=True, safe_to_file=True)
+
+tracks_by_noise(safe_to_file=True)
+
+data_set = "bsphiphi"
+
+distribution_of_noise(safe_to_file=True)
+noise_histogram(safe_to_file=True)
+noise_histogram(density=True, safe_to_file=True)
+
+distribution_of_tracks(safe_to_file=True)
+tracks_histogram(safe_to_file=True)
+tracks_histogram(density=True, safe_to_file=True)
+
+tracks_by_noise(safe_to_file=True)
