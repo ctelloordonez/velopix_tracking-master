@@ -29,13 +29,14 @@ def get_json_data_from_folder(data_set_folder):
             json_data = json.loads(f.read())
             event = em.event(json_data)
             f.close()
+            print(f'closing : {filename}')
 
             jsons.append(json_data)
     return jsons
 
 
 def tracks_from_data(json_data):
-    tracks = []
+    reconstructible_tracks = []
     hits = []
     for hid, (x, y, z) in enumerate(zip(json_data["x"], json_data["y"], json_data["z"])):
         hits.append(em.hit(x, y, z, hid))
@@ -46,13 +47,15 @@ def tracks_from_data(json_data):
         track_hits = [hits[hit_number] for hit_number in d["hits"]]
         mcp = MCParticle(d.get("key", 0), d.get("pid", 0), d.get("p", 0), d.get("pt", 0), d.get("eta", 0),
                          d.get("phi", 0), d.get("charge", 0), track_hits)
-        tracks.append(em.track(track_hits))
-    return tracks
+
+        if len(track_hits) >= 3:
+            reconstructible_tracks.append(em.track(track_hits))
+    return reconstructible_tracks
 
 
 def noise_from_data(json_data):
     noise = 0
-    hits_in_tracks = 0
+    hits_in_reconstructible_tracks = 0
     tracks = []
     hits = []
     for hid, (x, y, z) in enumerate(zip(json_data["x"], json_data["y"], json_data["z"])):
@@ -62,9 +65,10 @@ def noise_from_data(json_data):
     for p in particles:
         d = {description[i]: p[i] for i in range(len(description))}
         track_hits = [hits[hit_number] for hit_number in d["hits"]]
-        hits_in_tracks += len(track_hits)
+        if len(track_hits) >= 3:
+            hits_in_reconstructible_tracks += len(track_hits)
 
-    noise = len(hits) - hits_in_tracks
+    noise = len(hits) - hits_in_reconstructible_tracks
     return noise
 
 
@@ -85,6 +89,8 @@ def origins_from_data(json_data, limit=False):
             origins.append(track_hits[0])
 
     return origins
+
+
 # ----------------------------------- UTILS ------------------------------------------------
 
 
@@ -148,7 +154,7 @@ def plot_density_histogram(data, title="Histogram", xlabel="Data", ylabel="", sa
 
 def plot_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_file=False):
     x = np.array(data)
-    plt.hist(x, bins=get_bins(x), label="Data")
+    plt.hist(x, get_bins(x), label="Data")
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
