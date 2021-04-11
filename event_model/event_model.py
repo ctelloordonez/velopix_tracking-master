@@ -62,7 +62,7 @@ class hit(object):
   It may optionally contain the number of the module where
   the hit happened.
   '''
-  def __init__(self, x, y, z, hit_id, module=-1, t=0, with_t=False):
+  def __init__(self, x, y, z, hit_id, module=-1, t=0, with_t=False, direction=0):
     self.x = x
     self.y = y
     self.z = z
@@ -70,6 +70,8 @@ class hit(object):
     self.id = hit_id
     self.module_number = module
     self.with_t = with_t
+    self.direction = direction
+
 
   def __getitem__(self, index):
     if (index<0 or index>2):
