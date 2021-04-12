@@ -172,7 +172,6 @@ def plot_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_fi
         plt.close()
     else:
         plt.show()
-
 # ----------------------------------- PLOTS ------------------------------------------------
 
 
@@ -248,6 +247,30 @@ def tracks_by_noise(safe_to_file=False):
     title = f'#tracks by #noise on {data_set}'
     plt.title(title)
     plt.grid(True)
+    if safe_to_file:
+        plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_divided_tracks(safe_to_file=False):
+    x = np.arange(start=1, stop=17, step=1)
+    y1 = np.array([0, 5.4093, 9.0091, 9.621, 12.6665, 12.4799, 15.4293, 15.3473, 18.0204, 17.9006, 20.1307, 20.2586, 22.2226, 22.3971, 24.4066, 24.2933])
+    y2 = np.array([0, 5.2338, 8.7725, 9.3465, 12.42, 12.1994, 15.1068, 11.3658, 14.4671, 14.3217, 16.938, 16.7929, 19.1647, 19.0381, 21.23, 21.0619])
+    plt.scatter(x, y1, marker='s', s=5, c='teal', label='minibias')
+    plt.scatter(x, y2, marker='o', s=5, c='darkred', label='bsphiphi')
+
+    m1, b1 = np.polyfit(x, y1, 1)
+    m2, b2 = np.polyfit(x, y2, 1)
+    plt.plot(x, m1*x + b1, c='skyblue', alpha=0.5, linestyle='dashed')
+    plt.plot(x, m2*x + b2, c='salmon', alpha=0.5, linestyle='dashed')
+
+    plt.legend(loc='upper left')
+    plt.xlabel('#clusters')
+    plt.ylabel('%divided tracks')
+    title = 'tracks divided by clusters'
+    plt.title(title)
     if safe_to_file:
         plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
         plt.close()
