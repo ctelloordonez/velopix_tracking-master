@@ -6,9 +6,15 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 
+import sys
+
+# this gets the full path of the project root on your pc and adds it to the path
+project_root = os.path.abspath(os.path.join(__file__,'..','..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 import event_model.event_model as em
 from validator.validator_lite import MCParticle
-
 
 # ----------------------------------- UTILS ------------------------------------------------
 def get_bins(x):
@@ -21,7 +27,8 @@ def get_bins(x):
 
 def get_json_data_from_folder(data_set_folder):
     jsons = []
-    for (dirpath, dirnames, filenames) in os.walk(f"../events/{data_set_folder}"):
+    # for (dirpath, dirnames, filenames) in os.walk(f"../events/{data_set_folder}"):
+    for (dirpath, dirnames, filenames) in os.walk(os.path.join(project_root, f"events/{data_set_folder}")):
         for i, filename in enumerate(filenames):
             # Get an event
             print(f'opening: {filename}')
