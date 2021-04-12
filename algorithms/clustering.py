@@ -18,6 +18,7 @@ class Clustering:
 def get_polar_coordinates(x, y):
     r = math.sqrt(x ** 2 + y ** 2)
     phi = math.atan2(x, y)
-    if phi < 0:
+    if (phi < 0):
         phi = math.pi - phi
     return r, phi
+
