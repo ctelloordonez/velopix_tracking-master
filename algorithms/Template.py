@@ -14,8 +14,7 @@ def template(panels,slopeX,slopeY,startingPanel,trackLength,error,distancePermit
         if(numberOfConsecutivePanelsWithoutAHit < allowedConsecutiveNonHits):
             xValue = 0.0
             yValue = 0.0
-            if(checkPanelRegion(panels[startingPanel+i],xValue,yValue,distancePermitted
-            ) == True):
+            if(checkPanelRegion(panels[startingPanel+i],xValue,yValue,distancePermitted) == True):
                 hitSum = hitSum + 1
             else:
                 numberOfConsecutivePanelsWithoutAHit += 1
