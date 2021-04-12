@@ -14,6 +14,8 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 import event_model.event_model as em
+from algorithms import clustering
+from algorithms.clustering import Clustering
 from validator.validator_lite import MCParticle
 
 # ----------------------------------- UTILS ------------------------------------------------
@@ -251,6 +253,41 @@ def tracks_by_noise(safe_to_file=False):
         plt.close()
     else:
         plt.show()
+
+
+def divided_tracks():
+    jsons = get_json_data_from_folder(data_set)
+
+    for k in range(2, 17):
+        total_tracks = 0
+        total_divided_tracks = 0
+        for i in range(0, len(jsons)):
+            json_data = jsons[i]
+            event = em.event(json_data)
+            bins = Clustering(K=k).get_bins(event)
+            tracks = tracks_from_data(json_data)
+
+            out_of_bin = 0
+
+            for track in tracks:
+                hits_in_bins = [0 for b in range(len(bins))]
+                for hit in track.hits:
+                    for i, b in enumerate(bins):
+                        if hit in b:
+                            hits_in_bins[i] += 1
+
+                for b in hits_in_bins:
+                    if b != 0 and b != sum(hits_in_bins):
+                        out_of_bin += 1
+
+            total_tracks += len(tracks)
+            total_divided_tracks += out_of_bin
+
+        print()
+        print(f'with {k} bins\n'
+              f'divided tracks = {total_divided_tracks}\n'
+              f'form = {total_tracks}\n'
+              f'{round(total_divided_tracks * 100 / total_tracks, 4)}%')
 
 
 def track_origin_analysis():
