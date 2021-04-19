@@ -6,9 +6,17 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 
-import event_model.event_model as em
-from validator.validator_lite import MCParticle
+import sys
 
+# this gets the full path of the project root on your pc and adds it to the path
+project_root = os.path.abspath(os.path.join(__file__,'..','..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+import event_model.event_model as em
+from algorithms import clustering
+from algorithms.clustering import Clustering
+from validator.validator_lite import MCParticle
 
 # ----------------------------------- UTILS ------------------------------------------------
 def get_bins(x):
@@ -21,21 +29,23 @@ def get_bins(x):
 
 def get_json_data_from_folder(data_set_folder):
     jsons = []
-    for (dirpath, dirnames, filenames) in os.walk(f"../events/{data_set_folder}"):
+    # for (dirpath, dirnames, filenames) in os.walk(f"../events/{data_set_folder}"):
+    for (dirpath, dirnames, filenames) in os.walk(os.path.join(project_root, f"events/{data_set_folder}")):
         for i, filename in enumerate(filenames):
             # Get an event
-            print(f'opening: {filename}')
+            # print(f'opening: {filename}')
             f = open(os.path.realpath(os.path.join(dirpath, filename)))
             json_data = json.loads(f.read())
             event = em.event(json_data)
             f.close()
+            # print(f'closing : {filename}')
 
             jsons.append(json_data)
     return jsons
 
 
-def tracks_from_data(json_data):
-    tracks = []
+def tracks_from_data(json_data, only_reconstructible=True):
+    reconstructible_tracks = []
     hits = []
     for hid, (x, y, z) in enumerate(zip(json_data["x"], json_data["y"], json_data["z"])):
         hits.append(em.hit(x, y, z, hid))
@@ -46,13 +56,18 @@ def tracks_from_data(json_data):
         track_hits = [hits[hit_number] for hit_number in d["hits"]]
         mcp = MCParticle(d.get("key", 0), d.get("pid", 0), d.get("p", 0), d.get("pt", 0), d.get("eta", 0),
                          d.get("phi", 0), d.get("charge", 0), track_hits)
-        tracks.append(em.track(track_hits))
-    return tracks
+
+        if only_reconstructible:
+            if len(track_hits) >= 3:
+                reconstructible_tracks.append(em.track(track_hits))
+        else:
+            reconstructible_tracks.append(em.track(track_hits))
+    return reconstructible_tracks
 
 
 def noise_from_data(json_data):
     noise = 0
-    hits_in_tracks = 0
+    hits_in_reconstructible_tracks = 0
     tracks = []
     hits = []
     for hid, (x, y, z) in enumerate(zip(json_data["x"], json_data["y"], json_data["z"])):
@@ -62,9 +77,10 @@ def noise_from_data(json_data):
     for p in particles:
         d = {description[i]: p[i] for i in range(len(description))}
         track_hits = [hits[hit_number] for hit_number in d["hits"]]
-        hits_in_tracks += len(track_hits)
+        if len(track_hits) >= 3:
+            hits_in_reconstructible_tracks += len(track_hits)
 
-    noise = len(hits) - hits_in_tracks
+    noise = len(hits) - hits_in_reconstructible_tracks
     return noise
 
 
@@ -85,6 +101,8 @@ def origins_from_data(json_data, limit=False):
             origins.append(track_hits[0])
 
     return origins
+
+
 # ----------------------------------- UTILS ------------------------------------------------
 
 
@@ -148,7 +166,7 @@ def plot_density_histogram(data, title="Histogram", xlabel="Data", ylabel="", sa
 
 def plot_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_file=False):
     x = np.array(data)
-    plt.hist(x, bins=get_bins(x), label="Data")
+    plt.hist(x, get_bins(x), label="Data")
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
@@ -157,7 +175,6 @@ def plot_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_fi
         plt.close()
     else:
         plt.show()
-
 # ----------------------------------- PLOTS ------------------------------------------------
 
 
@@ -238,6 +255,65 @@ def tracks_by_noise(safe_to_file=False):
         plt.close()
     else:
         plt.show()
+
+
+def plot_divided_tracks(safe_to_file=False):
+    x = np.arange(start=1, stop=17, step=1)
+    y1 = np.array([0, 5.4093, 9.0091, 9.621, 12.6665, 12.4799, 15.4293, 15.3473, 18.0204, 17.9006, 20.1307, 20.2586, 22.2226, 22.3971, 24.4066, 24.2933])
+    y2 = np.array([0, 5.2338, 8.7725, 9.3465, 12.42, 12.1994, 15.1068, 11.3658, 14.4671, 14.3217, 16.938, 16.7929, 19.1647, 19.0381, 21.23, 21.0619])
+    plt.scatter(x, y1, marker='s', s=5, c='teal', label='minibias')
+    plt.scatter(x, y2, marker='o', s=5, c='darkred', label='bsphiphi')
+
+    m1, b1 = np.polyfit(x, y1, 1)
+    m2, b2 = np.polyfit(x, y2, 1)
+    plt.plot(x, m1*x + b1, c='skyblue', alpha=0.5, linestyle='dashed')
+    plt.plot(x, m2*x + b2, c='salmon', alpha=0.5, linestyle='dashed')
+
+    plt.legend(loc='upper left')
+    plt.xlabel('#clusters')
+    plt.ylabel('%divided tracks')
+    title = 'tracks divided by clusters'
+    plt.title(title)
+    if safe_to_file:
+        plt.savefig(f'event_plots/{title}', bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+
+def divided_tracks():
+    jsons = get_json_data_from_folder(data_set)
+
+    for k in range(2, 17):
+        total_tracks = 0
+        total_divided_tracks = 0
+        for i in range(0, len(jsons)):
+            json_data = jsons[i]
+            event = em.event(json_data)
+            bins = Clustering(K=k).get_bins(event)
+            tracks = tracks_from_data(json_data)
+
+            out_of_bin = 0
+
+            for track in tracks:
+                hits_in_bins = [0 for b in range(len(bins))]
+                for hit in track.hits:
+                    for i, b in enumerate(bins):
+                        if hit in b:
+                            hits_in_bins[i] += 1
+
+                for b in hits_in_bins:
+                    if b != 0 and b != sum(hits_in_bins):
+                        out_of_bin += 1
+
+            total_tracks += len(tracks)
+            total_divided_tracks += out_of_bin
+
+        print()
+        print(f'with {k} bins\n'
+              f'divided tracks = {total_divided_tracks}\n'
+              f'form = {total_tracks}\n'
+              f'{round(total_divided_tracks * 100 / total_tracks, 4)}%')
 
 
 def track_origin_analysis():
