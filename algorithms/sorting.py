@@ -12,6 +12,13 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 
+# resource switch
+dataset_folder={
+    'small':'events/small_dataset',
+    'bsphiphi': 'events/bsphiphi',
+    'minibias': 'events/minibias'
+}
+
 # inherit classes and alter
 def get_events_data_from_folder(data_set_folder, num_events = -1, shuffle = False):
     events = []
