@@ -121,7 +121,14 @@ def print_event_2d_phi(event, tracks, x=2, track_color=0, phix=0, phiy=1, filena
   plt.title(filename)
   plt.tick_params(axis='both', which='major', labelsize=4*scale)
   plt.xlabel(f'{ntox[x]}', fontdict={'fontsize': 4*scale})   # TODO: label "Z"?
-  plt.ylabel("φ", fontdict={'fontsize': 4*scale}, rotation='horizontal')
+  angle = ""
+  if phix == 0 and phiy == 1:
+    angle = "φ"
+  if phix == 1 and phiy == 2:
+    angle = "θ"
+  if phix == 2 and phiy == 0:
+    angle = "Ψ"
+  plt.ylabel(angle, fontdict={'fontsize': 4*scale}, rotation='horizontal')
 
   if save_to_file:
     plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
@@ -142,38 +149,50 @@ def print_event_2d_phi(event, tracks, x=2, track_color=0, phix=0, phiy=1, filena
 #     s=2*scale
 #   )
 
-def print_event_3d_phi(event, tracks, x=2, y=0, track_color=0, rotate=False, filename='event_3d_phi'):
+def print_event_3d_phi(event, tracks, x=2, y=0, phix=0, phiy=1, track_color=0, rotate=False, filename='event_3d_phi', save_to_file=False):
   fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
   ax = plt.axes(projection='3d')
 
-  ax.scatter3D(
-    [h[x] for h in event.hits],
-    [h[y] for h in event.hits],
-    [hit_phi(h.x, h.y) for h in event.hits],
-    color=default_color,
-    s=2*scale
-  )
+  if len(tracks) > 0:
+    count = 0
+    for t in [t for t in tracks if len(t.hits)>=3]:
+      ax.scatter3D(
+        [h[x] for h in t.hits],
+        [h[y] for h in t.hits],
+        [hit_phi(h[phix], h[phiy]) for h in t.hits],
+        color=colors[count % len(colors)],
+        s=2*scale
+      )
 
-  for t in [t for t in tracks if len(t.hits)>=3]:
-    ax.plot3D(
-      [h[x] for h in t.hits],
-      [h[y] for h in t.hits],
-      [hit_phi(h.x, h.y) for h in t.hits],
-      color=colors[track_color],
-      linewidth=1
-    )
+      ax.plot3D(
+        [h[x] for h in t.hits],
+        [h[y] for h in t.hits],
+        [hit_phi(h[phix], h[phiy]) for h in t.hits],
+        color=colors[count % len(colors)],
+        linewidth=1
+      )
+      count += 1
 
   plt.tick_params(axis='both', which='major', labelsize=4*scale)
   ax.set_xlabel(f'{ntox[x]}', fontdict={'fontsize': 4*scale})
   ax.set_ylabel(f'{ntox[y]}', fontdict={'fontsize': 4*scale})
-  ax.set_zlabel("φ", fontdict={'fontsize': 4*scale}, rotation='horizontal')
+  angle = ""
+  if phix == 0 and phiy == 1:
+    angle = "φ"
+  if phix == 1 and phiy == 2:
+    angle = "θ"
+  if phix == 2 and phiy == 0:
+    angle = "Ψ"
+  ax.set_zlabel(angle, fontdict={'fontsize': 4*scale}, rotation='horizontal')
 
-  plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
-
-  if rotate:
-    for angle in range(0, 360):
-      ax.view_init(10, angle)
-      plt.draw()
-      plt.pause(.001)
-
-  plt.close()
+  if save_to_file:
+    plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+  else:
+    if rotate:
+      for angle in range(0, 360):
+        ax.view_init(10, angle)
+        plt.draw()
+        plt.pause(.001)
+    else:
+      plt.show()
