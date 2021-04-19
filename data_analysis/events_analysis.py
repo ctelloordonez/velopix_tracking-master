@@ -33,18 +33,18 @@ def get_json_data_from_folder(data_set_folder):
     for (dirpath, dirnames, filenames) in os.walk(os.path.join(project_root, f"events/{data_set_folder}")):
         for i, filename in enumerate(filenames):
             # Get an event
-            print(f'opening: {filename}')
+            # print(f'opening: {filename}')
             f = open(os.path.realpath(os.path.join(dirpath, filename)))
             json_data = json.loads(f.read())
             event = em.event(json_data)
             f.close()
-            print(f'closing : {filename}')
+            # print(f'closing : {filename}')
 
             jsons.append(json_data)
     return jsons
 
 
-def tracks_from_data(json_data):
+def tracks_from_data(json_data, only_reconstructible=True):
     reconstructible_tracks = []
     hits = []
     for hid, (x, y, z) in enumerate(zip(json_data["x"], json_data["y"], json_data["z"])):
@@ -57,7 +57,10 @@ def tracks_from_data(json_data):
         mcp = MCParticle(d.get("key", 0), d.get("pid", 0), d.get("p", 0), d.get("pt", 0), d.get("eta", 0),
                          d.get("phi", 0), d.get("charge", 0), track_hits)
 
-        if len(track_hits) >= 3:
+        if only_reconstructible:
+            if len(track_hits) >= 3:
+                reconstructible_tracks.append(em.track(track_hits))
+        else:
             reconstructible_tracks.append(em.track(track_hits))
     return reconstructible_tracks
 
