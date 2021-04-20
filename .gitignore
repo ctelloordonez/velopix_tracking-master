@@ -154,3 +154,6 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+
+# mac folder files
+.DS_Store
