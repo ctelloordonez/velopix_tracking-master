@@ -42,24 +42,130 @@ def hit_phi(x, y):
     return math.atan2(y, x)
 
 
-def print_event_2d_2phi(event, tracks, phix=0, phiy=0, filename="doublephi", save_to_file=False):
+def hit_r(x, y):
+    return math.sqrt(x**2 + y**2)
+
+
+def print_event_2d_2phi(event, tracks, phix=[0,1], phiy=[1,2], filename="doublephi", save_to_file=False):
   fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
   ax = plt.axes()
 
   count = 0
   for t in [t for t in tracks if len(t.hits)>=3]:
     count+=1
+    plt.plot(
+      [hit_phi(h[phix[0]], h[phix[1]]) for h in t.hits],
+      [hit_phi(h[phiy[0]], h[phiy[1]]) for h in t.hits],
+      color=colors[count % len(colors)],
+      alpha=0.4,
+      linewidth=1
+    )
     plt.scatter(
-      [hit_phi(h[phix], h[phiy]) for h in t.hits],
-      [hit_phi(h[phix], h[phiy]) for h in t.hits],
+      [hit_phi(h[phix[0]], h[phix[1]]) for h in t.hits],
+      [hit_phi(h[phiy[0]], h[phiy[1]]) for h in t.hits],
       color=colors[count % len(colors)],
       s=2*scale
     )
 
   plt.tick_params(axis='both', which='major', labelsize=4*scale)
-  plt.xlabel("rz", fontdict={'fontsize': 4*scale})
-  plt.ylabel("xy", fontdict={'fontsize': 4*scale}, rotation='horizontal')
-  plt.xlim([-2,2])
+  plt.xlabel(f'{ntox[phix[0]]}-{ntox[phix[1]]}', fontdict={'fontsize': 4*scale})
+  plt.ylabel(f'{ntox[phiy[0]]}-{ntox[phiy[1]]}', fontdict={'fontsize': 4*scale}, rotation='horizontal')
+  if save_to_file:
+    plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+  else:
+    plt.show()
+
+
+def print_event_2d_2phi_r(event, tracks, x=2, phix=0, phiy=1, filename="double_phi_with_r", save_to_file=False):
+    fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
+    ax = plt.axes()
+
+    if len(tracks) > 0:
+        count = 0
+        for t in [t for t in tracks if len(t.hits)  >= 3]:
+            plt.plot(
+              [hit_phi(hit_r(h[phix], h[phiy]), h[x]) for h in t.hits],
+              [hit_phi(h[phix], h[phiy]) for h in t.hits],
+              color=colors[count % len(colors)],
+              alpha=0.4,
+              linewidth=1
+            )
+            plt.scatter(
+              [hit_phi(hit_r(h[phix], h[phiy]), h[x]) for h in t.hits],
+              [hit_phi(h[phix], h[phiy]) for h in t.hits],
+              color=colors[count % len(colors)],
+              s=2 * scale
+            )
+            count += 1
+
+    else:
+        plt.scatter(
+          [hit_phi(hit_r(h[phix], h[phiy]), h[x]) for h in event.hits],
+          [hit_phi(h[phix], h[phiy]) for h in event.hits],
+          color=default_color,
+          s=2 * scale
+        )
+
+    plt.title(filename)
+    plt.tick_params(axis='both', which='major', labelsize=4*scale)
+    plt.xlabel(f'angle(r{ntox[x]})', fontdict={'fontsize': 4*scale})
+    angle = ""
+    if phix == 0 and phiy == 1:
+        angle = "φ"
+    if phix == 1 and phiy == 2:
+        angle = "θ"
+    if phix == 2 and phiy == 0:
+        angle = "Ψ"
+    plt.ylabel(angle, fontdict={'fontsize': 4*scale}, rotation='horizontal')
+
+    if save_to_file:
+        plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+def print_event_2d_phi_r(event, tracks, phix=0, phiy=1, filename="event_phi_r", save_to_file=False):
+  fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
+  ax = plt.axes()
+  if len(tracks) > 0:
+    count = 0
+    for t in [t for t in tracks if len(t.hits)>=3]:
+      plt.plot(
+        [hit_r(h[phix], h[phiy]) for h in t.hits],
+        [hit_phi(h[phix], h[phiy]) for h in t.hits],
+        color=colors[count % len(colors)],
+        alpha=0.4,
+        linewidth=1
+      )
+      plt.scatter(
+        [hit_r(h[phix], h[phiy]) for h in t.hits],
+        [hit_phi(h[phix], h[phiy]) for h in t.hits],
+        color=colors[count % len(colors)],
+        s=2*scale
+      )
+      count+=1
+
+  else:
+    plt.scatter(
+      [hit_r(h[phix], h[phiy]) for h in event.hits],
+      [hit_phi(h[phix], h[phiy]) for h in event.hits],
+      color=default_color,
+      s=2*scale
+    )
+
+  plt.title(filename)
+  plt.tick_params(axis='both', which='major', labelsize=4*scale)
+  plt.xlabel("r", fontdict={'fontsize': 4*scale})
+  angle = ""
+  if phix == 0 and phiy == 1:
+    angle = "φ"
+  if phix == 1 and phiy == 2:
+    angle = "θ"
+  if phix == 2 and phiy == 0:
+    angle = "Ψ"
+  plt.ylabel(angle, fontdict={'fontsize': 4*scale}, rotation='horizontal')
+
   if save_to_file:
     plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
     plt.close()
