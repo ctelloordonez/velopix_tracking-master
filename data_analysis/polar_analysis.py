@@ -85,7 +85,7 @@ def print_multi_event_hit_directions(events, dataset):
 
     x = np.array(range(52))
     ax1.bar(x,counters[0,:],width=0.5, label='Left')
-    ax1.bar(x,counters[2,:],width=0.5,bottom = counters[0,:], label='Reft')
+    ax1.bar(x,counters[2,:],width=0.5,bottom = counters[0,:], label='Right')
     ax1.bar(x,counters[1,:],width=0.5,bottom = counters[0,:]+ counters[2,:], label='Noise')
     ax1.legend()
     ax1.set_title('Track hit distribution couloured by trajectory direction')
