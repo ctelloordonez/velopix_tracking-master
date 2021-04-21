@@ -169,7 +169,7 @@ weights = np.array([[0,3,2],
                     [2,-3,0]])
 
 ##############
-# find minumum
+# 3. find minumum
 ##############
 
 hop_net = HopfieldNetwork(neurons, weights)
