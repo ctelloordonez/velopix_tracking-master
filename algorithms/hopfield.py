@@ -4,6 +4,7 @@ import os
 import sys 
 import numpy as np
 import inspect, os.path
+from math import pi, atan
 
 # fileimport that should always work when executing this file
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -21,21 +22,79 @@ from event_model import event_model as em
 class smallHoppfiedNetwork():
     # takes 3 modules
     def __init__(self, m1, m2, m3) -> None:
-        N1 = None # all connections between m1 & m2 -> dtype np.array size |m1| * |m2|  1000
-        N2 = None # all connections btw m2, m3 -> dtype np.array size |m2| * |m3| 1000
+        # m for module
+        self.m1_hits = m1.hits()
+        self.m2_hits = m2.hits()
+        self.m3_hits = m3.hits()
+
+        # c for count
+        self.c1 = len(self.m1_hits)
+        self.c2 = len(self.m2_hits)
+        self.c3 = len(self.m3_hits)
+
+        self.setup_neurons()
+        self.init_weights()
+        self.energy()
+
+    def setup_neurons(self):
+        # how are these orderd:
+        # i propose in the order all hit_1_0 -> all hit_2_i 
+        # TODO agreable?
+        self.N1 = np.random.uniform(size = (self.c1 * self.c2)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
+        self.N2 = np.random.uniform(size = (self.c2 * self.c3)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
         
-        N1_info = None
-        N2_info = None
+        # this is where we describe the angles in 3d space
+        # I suppose lets go with the angles on xz and yz plane to describe the ordering of the direction in space (alt store a vector form one point to the other)
+        # angles undirected so 0 - 180deg or 0 to pi 
+        self.N1_info = np.zeros(shape = (self.c1 * self.c2, 2))
+        self.N2_info = np.zeros(shape = (self.c2 * self.c3, 2))
+
+        for i, hit1 in enumerate(self.m1_hits):
+            for j, hit2 in enumerate(self.m2_hits):
+                n_idx = i * self.c2 + j
+                # this calculates angles of the line projections of the line segment defined by the hitpoints on zx, zy planes  
+                angle_xz = atan((hit2.x - hit1.x)/(hit2.z - hit1.z))
+                angle_yz = atan((hit2.y - hit1.y)/(hit2.z - hit1.z))
+
+                self.N1_info[n_idx, 0] = angle_xz
+                self.N1_info[n_idx, 1] = angle_yz
         
-        weights = None # dim |N1| * |N2| 
+        for i, hit1 in enumerate(self.m2_hits):
+            for j, hit2 in enumerate(self.m3_hits):
+                n_idx = i * self.c3 + j
+                # this calculates angles of the line projections of the line segment defined by the hitpoints on zx, zy planes  
+                angle_xz = atan((hit2.x - hit1.x)/(hit2.z - hit1.z))
+                angle_yz = atan((hit2.y - hit1.y)/(hit2.z - hit1.z))
+
+                self.N2_info[n_idx, 0] = angle_xz
+                self.N2_info[n_idx, 1] = angle_yz
+                
 
     # fill the weight matrix based on the geometric properties of the hits / segments
     def init_weights(self):
-        # important here t handle the weights for segments that dont share a git accordingly
+        # its a bit like looking at small summatrices that need weights: |m1| segments of N1 far connected to |m2| segemtns in N2 
+        self.weights = np.zeros(shape = (self.N1.shape[0], self.N2.shape[0])) 
+        # i will init the weights as the angels between the lines -> just to see make the logic which ones to 
+        # important here t handle the weights for segments that dont share a hit accordingly
+
+        # con representing the idx of the hit in m2 that connects the segements in N1 and N2
+        # intuitively i need to calc weights for all segments that connect via a point in m2
+        for con in range(self.c2):
+            # go over all segments (coming from hits in m1) that connect to the current con 
+            for i in range(self.c1):
+                n1_idx = i * self.c2 + con 
+                # go over all segments coming from 'con' that connect to all hits in m3
+                for j in range(self.c3): 
+                    n2_idx = con * self.c3 + j
+                    # this is the angle difference between the projected line segments in zx
+                    self.weights[n1_idx, n2_idx] = abs(self.N1_info[n1_idx,0] - self.N1_info[n1_idx,1])
         pass
     
     def energy(self):
-        pass
+        # test calculation for the energy using the matrices 
+        E = self.N1.T @ self.weights @ self.N2.T
+        print(E)
+        
 
     def update(self):
         pass
