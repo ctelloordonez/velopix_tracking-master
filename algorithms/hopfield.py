@@ -1,4 +1,14 @@
-import numpy as np
+# get the relevant dependencies 
+import json
+import os
+import sys 
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+from event_model import event_model as em
+
+
+import event_model as em
 
 #### Interesting Implementations
 # https://github.com/andreasfelix/hopfieldnetwork/tree/9e06c43c71c858afe4d8fc74f4c11c63ef83c22c
@@ -8,6 +18,10 @@ class smallHoppfiedNetwork():
     def __init__(self, m1, m2, m3) -> None:
         N1 = None # all connections between m1 & m2 -> dtype np.array size |m1| * |m2|  1000
         N2 = None # all connections btw m2, m3 -> dtype np.array size |m2| * |m3| 1000
+        
+        N1_info = None
+        N2_info = None
+        
         weights = None # dim |N1| * |N2| 
 
     # fill the weight matrix based on the geometric properties of the hits / segments
@@ -27,7 +41,11 @@ class smallHoppfiedNetwork():
         pass
 
 
-if '__main__' == __name__():
+if __name__ == "__main__":
+    f = open("./events/bsphiphi/velo_event_12.json")
+    json_data = json.loads(f.read())
+    event = event.em.event(json_data)
+    print(event)
     pass
 
 
