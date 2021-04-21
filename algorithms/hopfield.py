@@ -28,7 +28,6 @@ class smallHoppfiedNetwork():
 
 
 if '__main__' == __name__():
-    event
     pass
 
 
