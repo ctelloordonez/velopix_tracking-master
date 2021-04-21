@@ -3,10 +3,37 @@ import numpy as np
 #### Interesting Implementations
 # https://github.com/andreasfelix/hopfieldnetwork/tree/9e06c43c71c858afe4d8fc74f4c11c63ef83c22c
 
+class smallHoppfiedNetwork():
+    # takes 3 modules
+    def __init__(self, m1, m2, m3) -> None:
+        N1 = None # all connections between m1 & m2 -> dtype np.array size |m1| * |m2|  1000
+        N2 = None # all connections btw m2, m3 -> dtype np.array size |m2| * |m3| 1000
+        weights = None # dim |N1| * |N2| 
+
+    # fill the weight matrix based on the geometric properties of the hits / segments
+    def init_weights(self):
+        pass
+    
+    def energy(self):
+        pass
+
+    def update(self):
+        pass
+
+    def wibble_wabble(self):
+        pass
+
+    def tracks(self):
+        pass
+
+
+if '__main__' == __name__():
+    event
+    pass
+
 
 
 class HopfieldNetwork():
-
     def __init__(self, NEURONS, weights, ):
         self.NEURONS = NEURONS
         self.weights = weights
