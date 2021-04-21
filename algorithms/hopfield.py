@@ -27,7 +27,7 @@ class smallHoppfiedNetwork():
         self.m2_hits = m2.hits()
         self.m3_hits = m3.hits()
 
-        # c for count
+        # c for count of hits in module i
         self.c1 = len(self.m1_hits)
         self.c2 = len(self.m2_hits)
         self.c3 = len(self.m3_hits)
@@ -44,9 +44,9 @@ class smallHoppfiedNetwork():
         self.N2 = np.random.uniform(size = (self.c2 * self.c3)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
         
         # this is where we describe the angles in 3d space
-        # I suppose lets go with the angles on xz and yz plane to describe the ordering of the direction in space (alt store a vector form one point to the other)
+        # I suppose lets go with the angles on zx and zy plane to describe the ordering of the direction in space (alt store a vector form one point to the other)
         # angles undirected so 0 - 180deg or 0 to pi 
-        self.N1_info = np.zeros(shape = (self.c1 * self.c2, 2))
+        self.N1_info = np.zeros(shape = (self.c1 * self.c2, 2)) 
         self.N2_info = np.zeros(shape = (self.c2 * self.c3, 2))
 
         for i, hit1 in enumerate(self.m1_hits):
@@ -92,11 +92,12 @@ class smallHoppfiedNetwork():
     
     def energy(self):
         # test calculation for the energy using the matrices 
-        E = self.N1.T @ self.weights @ self.N2.T
+        # dim -> (1,n1) x (n1,n2) x (n2,1)
+        E = self.N1.T @ self.weights @ self.N2
         print(E)
         
-
     def update(self):
+        # after applying the update rule we need to check that the neurons are in the bound 0, 1 and if not set them to it
         pass
 
     def wibble_wabble(self):
