@@ -2,13 +2,18 @@
 import json
 import os
 import sys 
-module_path = os.path.abspath(os.path.join('..'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
+import numpy as np
+import inspect, os.path
+
+# fileimport that should always work when executing this file
+filename = inspect.getframeinfo(inspect.currentframe()).filename
+file_path = os.path.dirname(os.path.abspath(filename))
+project_root = os.path.dirname(file_path)
+
+if project_root not in sys.path:
+    sys.path.append(project_root)
 from event_model import event_model as em
 
-
-import event_model as em
 
 #### Interesting Implementations
 # https://github.com/andreasfelix/hopfieldnetwork/tree/9e06c43c71c858afe4d8fc74f4c11c63ef83c22c
@@ -26,6 +31,7 @@ class smallHoppfiedNetwork():
 
     # fill the weight matrix based on the geometric properties of the hits / segments
     def init_weights(self):
+        # important here t handle the weights for segments that dont share a git accordingly
         pass
     
     def energy(self):
@@ -42,13 +48,20 @@ class smallHoppfiedNetwork():
 
 
 if __name__ == "__main__":
-    f = open("./events/bsphiphi/velo_event_12.json")
+    # loading some event
+    event_path = os.path.join(project_root, "events/bsphiphi/velo_event_12.json")
+    f = open(event_path)
     json_data = json.loads(f.read())
-    event = event.em.event(json_data)
-    print(event)
-    pass
+    event = em.event(json_data)
 
+    # taking a subsection of the event ( 3 modules to feed into the small hoppfield net)
+    # lets only take the first 3 even modules
+    m1 = event.modules[0]
+    m2 = event.modules[2]
+    m3 = event.modules[4]
+    my_hoppfield = smallHoppfiedNetwork(m1=m1, m2=m2, m3=m3)
 
+exit()
 
 class HopfieldNetwork():
     def __init__(self, NEURONS, weights, ):
