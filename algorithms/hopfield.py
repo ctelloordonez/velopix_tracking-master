@@ -4,7 +4,7 @@ import os
 import sys 
 import numpy as np
 import inspect, os.path
-from math import pi, atan
+from math import pi, atan, sin
 
 # fileimport that should always work when executing this file
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -71,7 +71,7 @@ class smallHoppfiedNetwork():
                 
 
     # fill the weight matrix based on the geometric properties of the hits / segments
-    def init_weights(self):
+    def init_weights(self, alpha=1, beta=10, gamma=10):
         # its a bit like looking at small summatrices that need weights: |m1| segments of N1 far connected to |m2| segemtns in N2 
         self.weights = np.zeros(shape = (self.N1.shape[0], self.N2.shape[0])) 
         # i will init the weights as the angels between the lines -> just to see make the logic which ones to 
@@ -87,8 +87,9 @@ class smallHoppfiedNetwork():
                 for j in range(self.c3): 
                     n2_idx = con * self.c3 + j
                     # this is the angle difference between the projected line segments in zx
-                    self.weights[n1_idx, n2_idx] = abs(self.N1_info[n1_idx,0] - self.N1_info[n1_idx,1])
-        pass
+                    theta = abs(self.N1_info[n1_idx,0] - self.N2_info[n2_idx,0])
+                    phi = abs(self.N1_info[n1_idx,1] - self.N2_info[n2_idx,1])
+                    self.weights[n1_idx, n2_idx] = alpha * ((1-sin(theta))**beta) * ((1-sin(phi))**gamma)
     
     def energy(self):
         # test calculation for the energy using the matrices 
