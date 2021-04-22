@@ -4,7 +4,7 @@ import os
 import sys 
 import numpy as np
 import inspect, os.path
-from math import pi, atan, sin
+from math import pi, atan, sin, tanh
 
 # fileimport that should always work when executing this file
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -34,14 +34,18 @@ class smallHoppfiedNetwork():
 
         self.setup_neurons()
         self.init_weights()
-        self.energy()
+        B = 5
+        for i in range(20):
+            self.update(B=B)
+            self.energy(B=B)
 
     def setup_neurons(self):
         # how are these orderd:
-        # i propose in the order all hit_1_0 -> all hit_2_i 
+        # N1: i propose in the order all hit_1_0 -> all hit_2_i then hit_1_1 -> all hit_2_i, etc... 
+        # N2: hit_2_0 to all hit_3_i then hit_2_1 to all hit_3_i, etc...
         # TODO agreable?
-        self.N1 = np.random.uniform(size = (self.c1 * self.c2)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
-        self.N2 = np.random.uniform(size = (self.c2 * self.c3)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
+        self.N1 = np.random.uniform(size = (self.c1 * self.c2, 1)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
+        self.N2 = np.random.uniform(size = (self.c2 * self.c3, 1)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
         
         # this is where we describe the angles in 3d space
         # I suppose lets go with the angles on zx and zy plane to describe the ordering of the direction in space (alt store a vector form one point to the other)
@@ -91,15 +95,62 @@ class smallHoppfiedNetwork():
                     phi = abs(self.N1_info[n1_idx,1] - self.N2_info[n2_idx,1])
                     self.weights[n1_idx, n2_idx] = alpha * ((1-sin(theta))**beta) * ((1-sin(phi))**gamma)
     
-    def energy(self):
+    def energy(self, B = 1):
         # test calculation for the energy using the matrices 
-        # dim -> (1,n1) x (n1,n2) x (n2,1)
-        E = self.N1.T @ self.weights @ self.N2
+        # bifurc penalty term (i.e. if two segments go from 2 hits in m1 to one hit in m2)
+        # to do this easily lets reshape the neurons
+        N1_pen = self.N1.reshape(self.c2, self.c1)
+        N2_pen = self.N2.reshape(self.c2, self.c3)
+        bifurc_pen = np.sum(np.trace(N1_pen @ N1_pen.T)) + np.sum(np.trace(N2_pen @ N2_pen.T)) - \
+            np.sum(self.N1*self.N1) - np.sum(self.N2 * self.N2) 
+        
+         # dim -> (1,n1) x (n1,n2) x (n2,1)
+        E = -0.5 * (self.N1.T @ self.weights @ self.N2) + B * bifurc_pen
         print(E)
         
-    def update(self):
+    def update(self, B = 1, T = 5):
         # after applying the update rule we need to check that the neurons are in the bound 0, 1 and if not set them to it
-        pass
+        # first we update the N1 neurons then the N2 neurons
+       
+        # N1 neurons
+        for i in range(self.c1 * self.c2):
+            # -> update is basically the sum of the active n2 neurons times the weights
+            update = self.weights[i,:] @ self.N2
+
+            # all neurons going into hit in m2 + value of all neurons going out of m2 
+            # we look at neurons of segm between N1 and N2 and we want to 
+            m1_id = i // self.c2
+            m2_id = i % self.c2 
+
+            # all segments mapping to the hit in m1
+            m1h = np.sum(self.N1[m1_id * self.c2: (m1_id+1) * self.c2])
+            
+            # all segments mapping to the hit in m2
+            m2h = np.sum(self.N1.reshape(self.c2, self.c1)[m2_id, :])
+
+            # we need to substact the neuron of the segment 2 times because we add it 2 times
+            pen =  m1h + m2h - 2 * self.N1[i] 
+
+            self.N1[i] = 0.5 * (1 + tanh(update/(T) - B*pen/(T)))
+
+        # N2 neurons
+        for i in range(self.c2 * self.c3):
+            # -> update is basically the sum of the active n2 neurons times the weights
+            update = self.N1.T @ self.weights[:,i]
+            
+            m2_id = i // self.c3
+            m3_id = i % self.c3 
+
+            # all segments mapping to the hit in m2
+            m2h = np.sum(self.N2[m2_id * self.c3: (m2_id+1) * self.c3])
+            
+            # all segments mapping to the hit in m3
+            m3h = np.sum(self.N2.reshape(self.c3, self.c2)[m3_id, :])
+
+            # we need to substact the neuron of the segment 2 times because we add it 2 times
+            pen =  m2h + m3h - 2 * self.N2[i] 
+            self.N1[i] = 0.5 * (1 + tanh(update / T - B * pen / T))
+        # I think it also makes sense to process the neurons in blocks of neurons that go into the same hit
 
     def wibble_wabble(self):
         pass
