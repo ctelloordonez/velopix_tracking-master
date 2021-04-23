@@ -19,7 +19,9 @@ from event_model import event_model as em
 #### Interesting Implementations
 # https://github.com/andreasfelix/hopfieldnetwork/tree/9e06c43c71c858afe4d8fc74f4c11c63ef83c22c
 
-class smallHoppfiedNetwork():
+
+
+class smallHopfieldNetwork():
     # takes 3 modules
     def __init__(self, m1, m2, m3) -> None:
         # m for module
@@ -34,10 +36,6 @@ class smallHoppfiedNetwork():
 
         self.setup_neurons()
         self.init_weights()
-        B = 5
-        for i in range(20):
-            self.update(B=B)
-            self.energy(B=B)
 
     def setup_neurons(self):
         # how are these orderd:
@@ -46,7 +44,10 @@ class smallHoppfiedNetwork():
         # TODO agreable?
         self.N1 = np.random.uniform(size = (self.c1 * self.c2, 1)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
         self.N2 = np.random.uniform(size = (self.c2 * self.c3, 1)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
-        
+        # Passaleva Initializes all neurons as "switched on" and not randomly (p. 869)
+        # So we might try to set them to 1 or another 'activated' state
+
+
         # this is where we describe the angles in 3d space
         # I suppose lets go with the angles on zx and zy plane to describe the ordering of the direction in space (alt store a vector form one point to the other)
         # angles undirected so 0 - 180deg or 0 to pi 
@@ -106,7 +107,8 @@ class smallHoppfiedNetwork():
         
          # dim -> (1,n1) x (n1,n2) x (n2,1)
         E = -0.5 * (self.N1.T @ self.weights @ self.N2) + B * bifurc_pen
-        print(E)
+
+        return E[0][0]
         
     def update(self, B = 1, T = 5):
         # after applying the update rule we need to check that the neurons are in the bound 0, 1 and if not set them to it
@@ -152,11 +154,64 @@ class smallHoppfiedNetwork():
             self.N1[i] = 0.5 * (1 + tanh(update / T - B * pen / T))
         # I think it also makes sense to process the neurons in blocks of neurons that go into the same hit
 
-    def wibble_wabble(self):
-        pass
+    def converge(self, B=1, T=5, convergence_threshold=0.0005):
+        # Basically keep updating until the difference in Energy between timesteps is lower than 0.0005 (Based on Stimfple-Abele)
+        # Passaleva uses a different kind of convergence i think (4)
+        energies = [self.energy(B=B)] # store all energies (not fastest but maybe nice for visualisations)
+        self.update(B=B, T=T)
+        energies.append(self.energy(B=B))
+        t = 0 # timesteps
+        while abs(abs(energies[-2]) - abs(energies[-1])) >= convergence_threshold:
+            self.update(B=B, T=5)
+            energies.append(self.energy(B=B))
+            t += 1
+        
+        print("Network Converged after " + str(t) + " steps")
+        print("Energy = " + str(energies[-1]))  
 
-    def tracks(self):
-        pass
+
+    def tracks(self, activation_threshold=0):
+        # What the papers say:  The answer is given by the final set of active Neurons
+        #                       All sets of Neurons connected together are considered as track candidates
+        #                       
+        # IDEA: All neurons that share a hit and are both connected are track candidates
+        candidates = []
+        for con in range(self.c2):
+            # go over all segments (coming from hits in m1) that connect to the current con 
+            for i in range(self.c1):
+                n1_idx = i * self.c2 + con 
+                # go over all segments coming from 'con' that connect to all hits in m3
+                for j in range(self.c3): 
+                    n2_idx = con * self.c3 + j
+
+                    # if both are over the activaten threshold the two segments are a track candidate
+                    if self.N1[n1_idx] > activation_threshold and self.N2[n2_idx] > activation_threshold:
+                        candidates.append((n1_idx, n2_idx))
+
+        return candidates       
+
+    # Just a function to print some stats about the network
+    def network_stats(self, activation_threshold=0):
+        print("+-------------------------------------------------------+")
+        print("| Network Stats ")
+        print("+----------------------+--------------------------------+")
+        print("| # Neurons            | " + str(len(self.N1) + len(self.N2)))
+        print("+----------------------+--------------------------------+")
+        print("| N1 activation mean:  | " + str(np.mean(self.N1)))
+        print("+----------------------+--------------------------------+")
+        print("| # N1 > act_threshold | " + str(len(self.N1[self.N1 > activation_threshold])))
+        print("+----------------------+--------------------------------+")
+        print("| # N1 <= act_threshold| " + str(len(self.N1[self.N1 <= activation_threshold])))
+        print("+----------------------+--------------------------------+")
+        print("| N2 activation mean:  | " + str(np.mean(self.N2)))
+        print("+----------------------+--------------------------------+")
+        print("| # N2 > act_threshold | " + str(len(self.N2[self.N2 > activation_threshold])))
+        print("+----------------------+--------------------------------+")
+        print("| # N2 <= act_threshold| " + str(len(self.N2[self.N2 <= activation_threshold])))
+        print("+----------------------+--------------------------------+")
+
+
+
 
 
 if __name__ == "__main__":
@@ -171,96 +226,15 @@ if __name__ == "__main__":
     m1 = event.modules[0]
     m2 = event.modules[2]
     m3 = event.modules[4]
-    my_hoppfield = smallHoppfiedNetwork(m1=m1, m2=m2, m3=m3)
+    my_hopfield = smallHopfieldNetwork(m1=m1, m2=m2, m3=m3)
+    my_hopfield.network_stats()
+    my_hopfield.converge()
+    print("Number of Track Candidates: " + str(len(my_hopfield.tracks())))
+    my_hopfield.network_stats()
+    
+    
 
 exit()
 
-class HopfieldNetwork():
-    def __init__(self, NEURONS, weights, ):
-        self.NEURONS = NEURONS
-        self.weights = weights
 
-        self.n = NEURONS.shape[0] # Number of neurons
-        self.steps = 0 # completed updated steps (one step is updating all neurons)
-
-    def energy(self):
-        return (-1) * self.goodness()
-
-    def goodness(self):
-        g = (self.weights.dot(self.NEURONS)).dot(self.NEURONS)
-        return g/2
-    
-
-    # Stimpfl-Abele Paper - simple update rule (1) 
-    # The update rule we want should be (16)
-    def update_simple(self, steps=1):
-
-        for i in range(steps):
-
-            # For each step we go through all neurons (in random order) and update them
-            for i in np.random.permutation(self.n): # is this really random? [TODO]
-                
-                # Local Update Rule 
-                # Si = sign(sum_over_j(Tij * Sj))
-                T_i = self.weights[i,:]
-
-                # The Neurons Activation  - sum_over_j(Tij * Sj)
-                neurons_activation = sum(T_i * self.NEURONS)
-
-                # new updated value (either 1 or -1)
-                S_i =  np.sign(neurons_activation)
-
-                self.NEURONS[i] = S_i
-                
-            
-
-            self.steps += 1
-
-    def update(self, steps=1):
-
-        for i in range(steps):
-            pass
-
-
-
-##############
-# 1. Construct NEURONS
-##############
-
-# 1.1 Construct Track Segments
-#       - "identified by a set of consecutive neurons connecting a trail of aligned hits" (Passaleva)
-#       - "The angle among two neurons is defined by their scalar product;" (Passaleva)
-#           + Can we even do this? With Segments close to the Vertex Collision Region?
-
-# 1.2 Filter Track Segments
-
-# 1.3 Initialize NEURONS 
-#       - randomly?
-
-neurons = np.array([1,1,1])
-
-
-##############
-# 2. Construct WEIGHTS
-##############
-
-weights = np.array([[0,3,2],
-                    [3,0,-3],
-                    [2,-3,0]])
-
-##############
-# find minumum
-##############
-
-hop_net = HopfieldNetwork(neurons, weights)
-
-print('[Energy] ' + str(hop_net.energy()))
-
-
-hop_net.update_simple(steps=3)
-print('..updating')
-
-print('[Energy] ' + str(hop_net.energy()))
-
-print(hop_net.NEURONS)
 
