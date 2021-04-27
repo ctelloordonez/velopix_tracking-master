@@ -290,7 +290,7 @@ def divided_tracks():
         for i in range(0, len(jsons)):
             json_data = jsons[i]
             event = em.event(json_data)
-            bins = Clustering(K=k).get_bins(event)
+            bins = Clustering(K=k).get_angle_bins(event)
             tracks = tracks_from_data(json_data)
 
             out_of_bin = 0
