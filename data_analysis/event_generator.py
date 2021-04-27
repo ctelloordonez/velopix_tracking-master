@@ -77,9 +77,13 @@ def plot_modules(modules):
     plt.show()
 
 
-def plot_tracks_and_modules(tracks, modules):
+def plot_tracks_and_modules(tracks, modules, hopfield_out = False):
     [plt.plot([hit.z for hit in track.hits],
               [hit.y for hit in track.hits], color='black') for track in tracks]
+    if hopfield_out:
+        plt.title('Hoppfield Output')
+    else: 
+        plt.title('Generated Instance')
     plot_modules(modules)
 
 

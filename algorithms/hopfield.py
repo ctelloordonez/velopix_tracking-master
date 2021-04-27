@@ -5,7 +5,6 @@ import sys
 import numpy as np
 import inspect
 import os.path
-import data_analysis.event_generator as eg
 from math import pi, atan, sin, tanh
 
 # fileimport that should always work when executing this file
@@ -16,7 +15,7 @@ project_root = os.path.dirname(file_path)
 if project_root not in sys.path:
     sys.path.append(project_root)
 from event_model import event_model as em
-
+import data_analysis.event_generator as eg
 
 #### Interesting Implementations
 # https://github.com/andreasfelix/hopfieldnetwork/tree/9e06c43c71c858afe4d8fc74f4c11c63ef83c22c
@@ -25,7 +24,7 @@ from event_model import event_model as em
 
 class smallHopfieldNetwork():
     # takes 3 modules
-    def __init__(self, m1, m2, m3) -> None:
+    def __init__(self, m1, m2, m3, alpha=1, beta=10, gamma=10) -> None:
         # m for module
         self.m1_hits = m1.hits()
         self.m2_hits = m2.hits()
@@ -36,16 +35,21 @@ class smallHopfieldNetwork():
         self.c2 = len(self.m2_hits)
         self.c3 = len(self.m3_hits)
 
-        self.setup_neurons()
-        self.init_weights()
+        self.setup_neurons(uniform_initialization=False)
+        self.init_weights(alpha=alpha, beta=beta, gamma=gamma)
 
-    def setup_neurons(self):
+    def setup_neurons(self, uniform_initialization=True):
         # how are these orderd:
         # N1: i propose in the order all hit_1_0 -> all hit_2_i then hit_1_1 -> all hit_2_i, etc... 
         # N2: hit_2_0 to all hit_3_i then hit_2_1 to all hit_3_i, etc...
         # TODO agreable?
-        self.N1 = np.random.uniform(size = (self.c1 * self.c2, 1)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
-        self.N2 = np.random.uniform(size = (self.c2 * self.c3, 1)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
+        if uniform_initialization:
+            self.N1 = np.random.uniform(size = (self.c1 * self.c2, 1)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
+            self.N2 = np.random.uniform(size = (self.c2 * self.c3, 1)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
+        else:
+            self.N1 = np.ones(shape = (self.c1 * self.c2, 1)) # all connections between m1 & m2 -> dtype np.array size |m1| * |m2| 
+            self.N2 = np.ones(shape = (self.c2 * self.c3, 1)) # all connections between m2 & m3 -> dtype np.array size |m1| * |m2|
+   
         # Passaleva Initializes all neurons as "switched on" and not randomly (p. 869)
         # So we might try to set them to 1 or another 'activated' state
 
@@ -112,7 +116,7 @@ class smallHopfieldNetwork():
 
         return E[0][0]
         
-    def update(self, B = 1, T = 5):
+    def update(self, B = 1, T = 1):
         # after applying the update rule we need to check that the neurons are in the bound 0, 1 and if not set them to it
         # first we update the N1 neurons then the N2 neurons
        
@@ -153,7 +157,7 @@ class smallHopfieldNetwork():
 
             # we need to substact the neuron of the segment 2 times because we add it 2 times
             pen =  m2h + m3h - 2 * self.N2[i] 
-            self.N1[i] = 0.5 * (1 + tanh(update / T - B * pen / T))
+            self.N2[i] = 0.5 * (1 + tanh(update / T - B * pen / T))
         # I think it also makes sense to process the neurons in blocks of neurons that go into the same hit
 
     def converge(self, B=1, T=5, convergence_threshold=0.0005):
@@ -168,11 +172,14 @@ class smallHopfieldNetwork():
             energies.append(self.energy(B=B))
             t += 1
         
+        self.update(B=B, T=5)
+        energies.append(self.energy(B=B))
+
         print("Network Converged after " + str(t) + " steps")
         print("Energy = " + str(energies[-1]))
 
 
-    def tracks(self, activation_threshold : list=None):
+    def tracks(self, activation_threshold : list=None, max_activation=False):
         # What the papers say:  The answer is given by the final set of active Neurons
         #                       All sets of Neurons connected together are considered as track candidates
         #                       
@@ -194,16 +201,33 @@ class smallHopfieldNetwork():
 
         # New method for computing the tracks (using above concepts) --------------------------
 
-        l1 = np.sqrt(len(self.N1))
-        l2 = np.sqrt(len(self.N2))
+        #l1 = np.sqrt(len(self.N1))
+        #l2 = np.sqrt(len(self.N2))
+        l1 = self.c1 # number of hits in module 1
+        l2 = self.c2
+        l3 = self.c3
         for i, state1 in enumerate(self.N1):
             for j, state2 in enumerate(self.N2):
                 if state1 < activation_threshold[0] or state2 < activation_threshold[1]:
                     continue
-                if int(i % l1) == int(j // l2):
-                    candidates.append(em.track([self.m1_hits[int(i / l1)],
+                # segments are connected via hit in m2
+                print(state1)
+                print(state2)
+                if int(i % l1) == int(j // l3):
+                    candidates.append(em.track([self.m1_hits[int(i // l2)],
                                                 self.m2_hits[int(i % l1)],
                                                 self.m3_hits[int(j % l2)]]))
+
+        if max_activation:
+            candidates = []
+            n1_transform = self.N1.reshape(self.c2, self.c1)
+            for con in range(self.c2): # loop over the connection hits in module 2
+                h1_idx = np.argmax(n1_transform[con,:]) 
+                h3_idx = np.argmax(self.N2[con*self.c3:(con+1)*self.c3])
+                print(np.argmax(self.N2[con*self.c3:(con+1)*self.c3]))
+                candidates.append(em.track([self.m1_hits[h1_idx],
+                                                self.m2_hits[con],
+                                                self.m3_hits[h3_idx]]))
 
         return candidates       
 
@@ -227,12 +251,14 @@ class smallHopfieldNetwork():
         print("| # N2 <= act_threshold| " + str(len(self.N2[self.N2 <= activation_threshold])))
         print("+----------------------+--------------------------------+")
 
-    def plot_network_result(self, activation_threshold=None):
+    def plot_network_result(self, activation_threshold=None, max_segment=False, hopfield_out = False):
         if activation_threshold:
             t = self.tracks(activation_threshold=activation_threshold)
+        elif max_segment:
+            t = self.tracks(max_activation=True)
         else:
             t = self.tracks()
-        eg.plot_tracks_and_modules(t, [m1, m2, m3])
+        eg.plot_tracks_and_modules(t, [m1, m2, m3], hopfield_out = hopfield_out)
 
 
 if __name__ == "__main__":
@@ -244,6 +270,14 @@ if __name__ == "__main__":
 
     # taking a subsection of the event ( 3 modules to feed into the small hoppfield net)
     # lets only take the first 3 even modules
+    
+    #################### PARAMETERS #######################
+    ### WHEIGHTS ###
+    ALPHA=1
+    BETA=10
+    GAMMA=10
+
+    #######################################################
 
     # Generating a test event to work with
     tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
@@ -254,13 +288,14 @@ if __name__ == "__main__":
     m1 = modules[0]
     m2 = modules[1]
     m3 = modules[2]
-    my_hopfield = smallHopfieldNetwork(m1=m1, m2=m2, m3=m3)
+    my_hopfield = smallHopfieldNetwork(m1=m1, m2=m2, m3=m3, alpha=ALPHA, beta=BETA, gamma=GAMMA)
     my_hopfield.network_stats()
     my_hopfield.converge()
-    threshold = [0.2, 0.2]
+    threshold = [0.5, 0.5]
     print("Number of Track Candidates: " + str(len(my_hopfield.tracks(activation_threshold=threshold))))
     my_hopfield.network_stats()
-    my_hopfield.plot_network_result(activation_threshold=threshold)
+    #my_hopfield.plot_network_result(activation_threshold=threshold)
+    my_hopfield.plot_network_result(max_segment=True, hopfield_out=True)
     
 
 exit()
