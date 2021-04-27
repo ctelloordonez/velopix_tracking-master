@@ -3,7 +3,9 @@ import json
 import os
 import sys 
 import numpy as np
-import inspect, os.path
+import inspect
+import os.path
+import data_analysis.event_generator as eg
 from math import pi, atan, sin, tanh
 
 # fileimport that should always work when executing this file
@@ -167,7 +169,7 @@ class smallHopfieldNetwork():
             t += 1
         
         print("Network Converged after " + str(t) + " steps")
-        print("Energy = " + str(energies[-1]))  
+        print("Energy = " + str(energies[-1]))
 
 
     def tracks(self, activation_threshold=0):
@@ -211,9 +213,6 @@ class smallHopfieldNetwork():
         print("+----------------------+--------------------------------+")
 
 
-
-
-
 if __name__ == "__main__":
     # loading some event
     event_path = os.path.join(project_root, "events/bsphiphi/velo_event_12.json")
@@ -223,15 +222,23 @@ if __name__ == "__main__":
 
     # taking a subsection of the event ( 3 modules to feed into the small hoppfield net)
     # lets only take the first 3 even modules
-    m1 = event.modules[0]
-    m2 = event.modules[2]
-    m3 = event.modules[4]
+
+    # Generating a test event to work with
+    tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4, 5, 7], num_test_events=2,
+                                     num_tracks=50, reconstructable_tracks=True)[0]
+    modules = eg.tracks_to_modules(tracks)
+    eg.plot_tracks_and_modules(tracks, modules)
+
+    m1 = modules[0]
+    m2 = modules[1]
+    m3 = modules[2]
     my_hopfield = smallHopfieldNetwork(m1=m1, m2=m2, m3=m3)
     my_hopfield.network_stats()
     my_hopfield.converge()
     print("Number of Track Candidates: " + str(len(my_hopfield.tracks())))
     my_hopfield.network_stats()
-    
+    print(my_hopfield.N1)
+    print(tracks)
     
 
 exit()

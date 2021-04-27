@@ -91,23 +91,31 @@ def tracks_to_modules(tracks):
                   key=lambda module: module.module_number)
 
 
-def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_test_events=1, dataset="small_dataset"):
+def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_test_events=1,
+                         dataset="small_dataset", reconstructable_tracks=False):
     events = random.sample(get_events_from_folder(dataset), num_test_events)
     total_tracks = []
-    for event in events:
+    for i, event in enumerate(events):
         tracks = [em.track([hit for hit in track.hits if hit.module_number in allowed_modules])
                   for track in event.real_tracks]
         tracks = [track for track in tracks if len(track.hits) > 0]
-        total_tracks.append(random.sample(tracks, num_tracks))
+        if reconstructable_tracks:
+            tracks = [track for track in tracks if len(set(
+                [hit.module_number for hit in track.hits])) >= 3]
+        real_num_tracks = min(len(tracks), num_tracks)
+        if real_num_tracks != num_tracks:
+            print(f"Too many tracks expected,"
+                  f" returning maximum of {real_num_tracks} instead in event {i}.")
+        total_tracks.append(random.sample(tracks, real_num_tracks))
     return total_tracks
 
 
 if __name__ == '__main__':
     data_set = "small_dataset"
     events_tracks = []
-    test_tracks = generate_test_tracks(allowed_modules=[2, 4, 6, 8])[0]
-    modules = tracks_to_modules(test_tracks)
-    plot_tracks_and_modules(test_tracks, modules)
+    test_tracks = generate_test_tracks(allowed_modules=[2, 4, 6, 8, 10, 12], num_tracks=20)[0]
+    test_modules = tracks_to_modules(test_tracks)
+    plot_tracks_and_modules(test_tracks, test_modules)
 
     # events = get_events_from_folder(data_set)
     # write_tracks(random.sample(random.choice(events).real_tracks, 20), "test.txt")
