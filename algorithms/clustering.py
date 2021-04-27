@@ -16,6 +16,22 @@ class Clustering:
                     cluster_bin.append(hit)
         return self.bins
 
+    def get_space_bins(self, event, coordinate=2):
+        for hit in event.hits:
+            if coordinate == 2:
+                offset = 400
+            else:
+                offset = 40
+            value = hit[coordinate] + offset
+            if coordinate == 2:
+                space_range = 1200
+            else:
+                space_range = 80
+            for b, cluster_bin in enumerate(self.bins):
+                if b * (space_range / self.bins_count) < value <= (b+1) * (space_range / self.bins_count):
+                    cluster_bin.append(hit)
+        return self.bins
+
 
 def get_polar_coordinates(x, y):
     r = math.sqrt(x ** 2 + y ** 2)

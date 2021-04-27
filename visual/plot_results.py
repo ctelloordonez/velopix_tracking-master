@@ -51,3 +51,12 @@ print_clustered_2d(event, [], bins, y=1, filename="clustering_solution_yz", with
 
 bins = Clustering().get_angle_bins(event, x=0, y=1)
 print_clustered_2d(event, [], bins, x=0, y=1, filename="clustering_solution_xy", with_modules=False, save_to_file=True)
+
+bins = Clustering().get_space_bins(event, coordinate=2)
+print_clustered_2d(event, [], bins, x=2, y=1, filename="clustering_space_yz", with_modules=False, save_to_file=True)
+
+bins = Clustering().get_space_bins(event, coordinate=0)
+print_clustered_2d(event, [], bins, x=2, y=0, filename="clustering_space_xz", with_modules=False, save_to_file=True)
+
+bins = Clustering().get_space_bins(event, coordinate=1)
+print_clustered_2d(event, [], bins, x=2, y=1, filename="clustering_space_y_yz", with_modules=False, save_to_file=True)
