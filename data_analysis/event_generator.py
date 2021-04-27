@@ -61,30 +61,30 @@ def read_tracks(file_name):
     return tracks
 
 
-def plot_tracks(tracks):
+def plot_tracks(tracks, title=None):
     [plt.plot([hit.z for hit in track.hits],
               [hit.y for hit in track.hits], color='b') for track in tracks]
+    if title:
+        plt.title(title)
     plt.show()
 
 
-def plot_modules(modules):
+def plot_modules(modules, title=None):
     [plt.scatter([hit.z for hit in module.hits()],
                  [hit.y for hit in module.hits()]) for module in modules]
     min_y = min([min(module.hits(), key=lambda hit: hit.y).y for module in modules])
     max_y = max([max(module.hits(), key=lambda hit: hit.y).y for module in modules])
     [plt.plot([sum([hit.z for hit in module.hits()])/len(module.hits())]*2,
               [min_y, max_y]) for module in modules]
+    if title:
+        plt.title(title)
     plt.show()
 
 
-def plot_tracks_and_modules(tracks, modules, hopfield_out = False):
+def plot_tracks_and_modules(tracks, modules, title=None):
     [plt.plot([hit.z for hit in track.hits],
               [hit.y for hit in track.hits], color='black') for track in tracks]
-    if hopfield_out:
-        plt.title('Hoppfield Output')
-    else: 
-        plt.title('Generated Instance')
-    plot_modules(modules)
+    plot_modules(modules, title)
 
 
 def tracks_to_modules(tracks):
@@ -97,7 +97,8 @@ def tracks_to_modules(tracks):
 
 def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_test_events=1,
                          dataset="small_dataset", reconstructable_tracks=False):
-    events = random.sample(get_events_from_folder(dataset), num_test_events)
+    events_in_dataset = get_events_from_folder(dataset)
+    events = random.sample(events_in_dataset, num_test_events)
     total_tracks = []
     for i, event in enumerate(events):
         tracks = [em.track([hit for hit in track.hits if hit.module_number in allowed_modules])
@@ -107,7 +108,9 @@ def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_t
             tracks = [track for track in tracks if len(set(
                 [hit.module_number for hit in track.hits])) >= 3]
         real_num_tracks = min(len(tracks), num_tracks)
-        if real_num_tracks != num_tracks:
+        if real_num_tracks == 0:
+            print(f"Event {i} has no tracks in allowed modules, thus track list is empty.")
+        elif real_num_tracks != num_tracks:
             print(f"Too many tracks expected,"
                   f" returning maximum of {real_num_tracks} instead in event {i}.")
         total_tracks.append(random.sample(tracks, real_num_tracks))

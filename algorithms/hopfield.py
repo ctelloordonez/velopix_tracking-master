@@ -203,7 +203,7 @@ class smallHopfieldNetwork():
 
         #l1 = np.sqrt(len(self.N1))
         #l2 = np.sqrt(len(self.N2))
-        l1 = self.c1 # number of hits in module 1
+        l1 = self.c1  # number of hits in module 1
         l2 = self.c2
         l3 = self.c3
         for i, state1 in enumerate(self.N1):
@@ -219,12 +219,12 @@ class smallHopfieldNetwork():
         if max_activation:
             candidates = []
             n1_transform = self.N1.reshape(self.c2, self.c1)
-            for con in range(self.c2): # loop over the connection hits in module 2
-                h1_idx = np.argmax(n1_transform[con,:]) 
+            for con in range(self.c2):  # loop over the connection hits in module 2
+                h1_idx = np.argmax(n1_transform[con, :])
                 h3_idx = np.argmax(self.N2[con*self.c3:(con+1)*self.c3])
                 candidates.append(em.track([self.m1_hits[h1_idx],
-                                                self.m2_hits[con],
-                                                self.m3_hits[h3_idx]]))
+                                            self.m2_hits[con],
+                                            self.m3_hits[h3_idx]]))
 
         return candidates       
 
@@ -248,39 +248,42 @@ class smallHopfieldNetwork():
         print("| # N2 <= act_threshold| " + str(len(self.N2[self.N2 <= activation_threshold])))
         print("+----------------------+--------------------------------+")
 
-    def plot_network_result(self, activation_threshold=None, max_segment=False, hopfield_out = False):
+    def plot_network_result(self, activation_threshold=None, max_segment=False):
         if activation_threshold:
             t = self.tracks(activation_threshold=activation_threshold)
         elif max_segment:
             t = self.tracks(max_activation=True)
         else:
             t = self.tracks()
-        eg.plot_tracks_and_modules(t, [m1, m2, m3], hopfield_out = hopfield_out)
+        eg.plot_tracks_and_modules(t, [m1, m2, m3], title="Hopfield Output")
 
 
 if __name__ == "__main__":
     # loading some event
-    event_path = os.path.join(project_root, "events/bsphiphi/velo_event_12.json")
-    f = open(event_path)
-    json_data = json.loads(f.read())
-    event = em.event(json_data)
+    # event_path = os.path.join(project_root, "events/bsphiphi/velo_event_12.json")
+    # f = open(event_path)
+    # json_data = json.loads(f.read())
+    # event = em.event(json_data)
 
-    # taking a subsection of the event ( 3 modules to feed into the small hoppfield net)
+    # taking a subsection of the event ( 3 modules to feed into the small hopfield net)
     # lets only take the first 3 even modules
     
     #################### PARAMETERS #######################
-    ### WHEIGHTS ###
-    ALPHA=1
-    BETA=10
-    GAMMA=10
+    ### WEIGHTS ###
+
+    ALPHA = 1
+    BETA = 10
+    GAMMA = 10
 
     #######################################################
 
     # Generating a test event to work with
-    tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
-                                     num_tracks=20, reconstructable_tracks=True)[0]
+    tracks = []
+    while len(tracks) == 0:
+        tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
+                                         num_tracks=20, reconstructable_tracks=True)[0]
     modules = eg.tracks_to_modules(tracks)
-    eg.plot_tracks_and_modules(tracks, modules)
+    eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
 
     m1 = modules[0]
     m2 = modules[1]
@@ -288,14 +291,5 @@ if __name__ == "__main__":
     my_hopfield = smallHopfieldNetwork(m1=m1, m2=m2, m3=m3, alpha=ALPHA, beta=BETA, gamma=GAMMA)
     my_hopfield.network_stats()
     my_hopfield.converge()
-    threshold = [0.5, 0.5]
-    print("Number of Track Candidates: " + str(len(my_hopfield.tracks(activation_threshold=threshold))))
     my_hopfield.network_stats()
-    #my_hopfield.plot_network_result(activation_threshold=threshold)
-    my_hopfield.plot_network_result(max_segment=True, hopfield_out=True)
-    
-
-exit()
-
-
-
+    my_hopfield.plot_network_result(max_segment=True)
