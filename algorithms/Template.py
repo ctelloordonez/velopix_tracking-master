@@ -34,7 +34,7 @@ def calculateYvalue():
     return
 
 
- Function to check whether hits have monotone distance as a function of z
+# Function to check whether hits have monotone distance as a function of z
 # Let hits be an array of hits that have been identified as potentially forming a track
 def checkMonotoneDistance(hits):
     i=0
@@ -53,7 +53,7 @@ def checkMonotoneDistance(hits):
     if(j == length(hits)-1 and distanceI  ==distanceJ):
         return True
 
-    elif(distanceI y > distanceJ):
+    elif(distanceI  > distanceJ):
         for k in range(i,length(hits)-1):
             if(get_polar_distance(hits[k].x,hits[k].y) < get_polar_distance(hits[k+1].x,hits[k+1].y)):
                 return False
@@ -97,7 +97,7 @@ def checkPanelRegion(panel,pointX,pointY, distance):
         difference = math.sqrt((panel[j].x-pointX)^2+(panel[j].y-pointY)^2) # calculate how far the pixel hit is from the predicited point
         if(difference < distance):
             return True
-        elif(j = numberOfHits-1):
+        elif(j == numberOfHits-1):
             return False
 
 # Function to determine the amount of feasible hints in the x,y region of the panel.
