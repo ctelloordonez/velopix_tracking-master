@@ -224,8 +224,8 @@ if __name__ == "__main__":
     # lets only take the first 3 even modules
 
     # Generating a test event to work with
-    tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4, 5, 7], num_test_events=2,
-                                     num_tracks=50, reconstructable_tracks=True)[0]
+    tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
+                                     num_tracks=3, reconstructable_tracks=True)[0]
     modules = eg.tracks_to_modules(tracks)
     eg.plot_tracks_and_modules(tracks, modules)
 
