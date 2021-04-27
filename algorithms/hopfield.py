@@ -35,6 +35,8 @@ class smallHopfieldNetwork():
         self.c2 = len(self.m2_hits)
         self.c3 = len(self.m3_hits)
 
+        self.extracted_tracks = None
+
         self.setup_neurons(uniform_initialization=False)
         self.init_weights(alpha=alpha, beta=beta, gamma=gamma)
 
@@ -180,6 +182,8 @@ class smallHopfieldNetwork():
 
 
     def tracks(self, activation_threshold : list=None, max_activation=False):
+        if self.extracted_tracks:
+            return self.extracted_tracks
         # What the papers say:  The answer is given by the final set of active Neurons
         #                       All sets of Neurons connected together are considered as track candidates
         #                       
@@ -201,8 +205,6 @@ class smallHopfieldNetwork():
 
         # New method for computing the tracks (using above concepts) --------------------------
 
-        #l1 = np.sqrt(len(self.N1))
-        #l2 = np.sqrt(len(self.N2))
         l1 = self.c1  # number of hits in module 1
         l2 = self.c2
         l3 = self.c3
@@ -225,8 +227,9 @@ class smallHopfieldNetwork():
                 candidates.append(em.track([self.m1_hits[h1_idx],
                                             self.m2_hits[con],
                                             self.m3_hits[h3_idx]]))
+        self.extracted_tracks = candidates
 
-        return candidates       
+        return candidates
 
     # Just a function to print some stats about the network
     def network_stats(self, activation_threshold=0):
@@ -281,7 +284,8 @@ if __name__ == "__main__":
     tracks = []
     while len(tracks) == 0:
         tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
-                                         num_tracks=20, reconstructable_tracks=True)[0]
+                                         num_tracks=20, reconstructable_tracks=True,
+                                         random_pool_size=20, dataset="minibias")[0]
     modules = eg.tracks_to_modules(tracks)
     eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
 
@@ -293,3 +297,4 @@ if __name__ == "__main__":
     my_hopfield.converge()
     my_hopfield.network_stats()
     my_hopfield.plot_network_result(max_segment=True)
+    print(my_hopfield.tracks())

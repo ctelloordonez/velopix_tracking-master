@@ -13,10 +13,13 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 
-def get_events_from_folder(data_set_folder):
+def get_events_from_folder(data_set_folder, num_events=None):
     events = []
     # for (dirpath, dirnames, filenames) in os.walk(f"../events/{data_set_folder}"):
     for (dirpath, dirnames, filenames) in os.walk(os.path.join(project_root, f"events/{data_set_folder}")):
+        if num_events:
+            num_events = min(len(filenames), num_events)
+            filenames = random.sample(filenames, num_events)
         for i, filename in enumerate(filenames):
             # Get an event
             # print(f'opening: {filename}')
@@ -96,10 +99,11 @@ def tracks_to_modules(tracks):
 
 
 def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_test_events=1,
-                         dataset="small_dataset", reconstructable_tracks=False):
-    events_in_dataset = get_events_from_folder(dataset)
-    events = random.sample(events_in_dataset, num_test_events)
+                         dataset="small_dataset", reconstructable_tracks=False,
+                         random_pool_size=10):
+    events = get_events_from_folder(dataset, random_pool_size)
     total_tracks = []
+
     for i, event in enumerate(events):
         tracks = [em.track([hit for hit in track.hits if hit.module_number in allowed_modules])
                   for track in event.real_tracks]
@@ -107,22 +111,27 @@ def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_t
         if reconstructable_tracks:
             tracks = [track for track in tracks if len(set(
                 [hit.module_number for hit in track.hits])) >= 3]
-        real_num_tracks = min(len(tracks), num_tracks)
+        [total_tracks.append(track) for track in tracks]
+
+    test_tracks = []
+    for i in range(num_test_events):
+        real_num_tracks = min(len(total_tracks), num_tracks)
         if real_num_tracks == 0:
             print(f"Event {i} has no tracks in allowed modules, thus track list is empty.")
         elif real_num_tracks != num_tracks:
             print(f"Too many tracks expected,"
                   f" returning maximum of {real_num_tracks} instead in event {i}.")
-        total_tracks.append(random.sample(tracks, real_num_tracks))
-    return total_tracks
+        test_tracks.append(random.sample(total_tracks, real_num_tracks))
+
+    return test_tracks
 
 
 if __name__ == '__main__':
     data_set = "small_dataset"
     events_tracks = []
-    test_tracks = generate_test_tracks(allowed_modules=[2, 4, 6, 8, 10, 12], num_tracks=20)[0]
-    test_modules = tracks_to_modules(test_tracks)
-    plot_tracks_and_modules(test_tracks, test_modules)
+    t_tracks = generate_test_tracks(allowed_modules=[2, 4, 6, 8, 10, 12], num_tracks=20)[0]
+    test_modules = tracks_to_modules(t_tracks)
+    plot_tracks_and_modules(t_tracks, test_modules)
 
     # events = get_events_from_folder(data_set)
     # write_tracks(random.sample(random.choice(events).real_tracks, 20), "test.txt")
