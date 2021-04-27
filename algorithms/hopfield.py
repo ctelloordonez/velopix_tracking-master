@@ -211,8 +211,6 @@ class smallHopfieldNetwork():
                 if state1 < activation_threshold[0] or state2 < activation_threshold[1]:
                     continue
                 # segments are connected via hit in m2
-                print(state1)
-                print(state2)
                 if int(i % l1) == int(j // l3):
                     candidates.append(em.track([self.m1_hits[int(i // l2)],
                                                 self.m2_hits[int(i % l1)],
@@ -224,7 +222,6 @@ class smallHopfieldNetwork():
             for con in range(self.c2): # loop over the connection hits in module 2
                 h1_idx = np.argmax(n1_transform[con,:]) 
                 h3_idx = np.argmax(self.N2[con*self.c3:(con+1)*self.c3])
-                print(np.argmax(self.N2[con*self.c3:(con+1)*self.c3]))
                 candidates.append(em.track([self.m1_hits[h1_idx],
                                                 self.m2_hits[con],
                                                 self.m3_hits[h3_idx]]))
@@ -281,7 +278,7 @@ if __name__ == "__main__":
 
     # Generating a test event to work with
     tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
-                                     num_tracks=4, reconstructable_tracks=True)[0]
+                                     num_tracks=20, reconstructable_tracks=True)[0]
     modules = eg.tracks_to_modules(tracks)
     eg.plot_tracks_and_modules(tracks, modules)
 
