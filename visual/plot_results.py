@@ -41,8 +41,13 @@ print_event_2d(event, solutions["track_following"], y=1, filename="classic_solut
 print_event_2d(event, solutions["dfs"], filename="dfs_solution_xz.png", track_color=4, save_to_file=True)
 print_event_2d(event, solutions["dfs"], y=1, filename="dfs_solution_yz.png", track_color=4, save_to_file=True)
 solutions["clustering"] = tracks_from_data(json_data=json_data)
-bins = Clustering().get_bins(event)
 
 from visual.base import print_clustered_2d
-print_clustered_2d(event, solutions["clustering"], bins, filename="clustering_solution_xz", save_to_file=True)
-print_clustered_2d(event, solutions["clustering"], bins, y=1, filename="clustering_solution_yz", save_to_file=True)
+bins = Clustering().get_angle_bins(event, x=2, y=0)
+print_clustered_2d(event, [], bins, filename="clustering_solution_xz", with_modules=False, save_to_file=True)
+
+bins = Clustering().get_angle_bins(event, x=1, y=2)
+print_clustered_2d(event, [], bins, y=1, filename="clustering_solution_yz", with_modules=False, save_to_file=True)
+
+bins = Clustering().get_angle_bins(event, x=0, y=1)
+print_clustered_2d(event, [], bins, x=0, y=1, filename="clustering_solution_xy", with_modules=False, save_to_file=True)
