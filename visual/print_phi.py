@@ -344,23 +344,3 @@ def print_event_3d_3phi(event, tracks , track_color=0, rotate=False, filename='e
         plt.pause(.001)
     else:
       plt.show()
-
-
-def test(event, tracks , track_color=0, rotate=False, filename='event_3d_3phi', save_to_file=False):
-  fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
-  ax = plt.axes(projection='3d')
-
-  if len(tracks) > 0:
-    count = 0
-    for t in [t for t in tracks if len(t.hits)>=3]:
-      ax.scatter3D(
-        [h.x for h in t.hits],
-        [h.y for h in t.hits],
-        [h.z for h in t.hits],
-        color=colors[count % len(colors)],
-        s=2*scale
-      )
-    count += 1
-
-
-  plt.show()
