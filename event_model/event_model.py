@@ -1,5 +1,6 @@
 import hashlib
-from math import sqrt, acos
+import math
+from math import sqrt, acos, atan2
 
 class event(object):
   '''Event defined by its json description.'''
@@ -114,7 +115,8 @@ class hit(object):
     self.direction = direction
     self.pol_phi = None
     self.pol_r = None
-
+    self.theta=None
+    self.psi=None
   def __getitem__(self, index):
     if (index<0 or index>2):
       raise IndexError
@@ -141,6 +143,15 @@ class hit(object):
     self.pol_phi = acos(self.x/self.pol_r)
     if self.y < 0:
       self.pol_phi *= -1
+
+  def hit_phi(self,x, y):
+    return math.atan2(x,y)
+
+  def update_theta(self):
+    self.theta=self.hit_phi(self.y, self.z)
+
+  def update_psi(self):
+    self.psi = self.hit_phi(self.x, self.z)
 
 class module(object):
   '''A module is identified by its number.

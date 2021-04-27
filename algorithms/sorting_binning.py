@@ -40,8 +40,9 @@ def get_events_data_from_folder(data_set_folder, num_events = -1, shuffle = Fals
     return events
 
 #method that takes as input the parameter on which it has to sort hits
-#the possible parameters are 'x','y','z','pol_r','pol_phi'
+#the possible parameters are 'x','y','z','pol_r','pol_phi','theta','psi'
 #this happens in ascending order
+
 def sort_by(parameter):
     dataset = 'bsphiphi'
     events = get_events_data_from_folder(dataset_folder[dataset], num_events=10, shuffle=False)
@@ -50,7 +51,14 @@ def sort_by(parameter):
         if parameter == 'pol_r' or parameter == 'pol_phi':
             for _ in event.hits:
                 _.update_polar()
+        if parameter == 'psi':
+            for _ in event.hits:
+                _.update_psi()
+        if parameter == 'theta':
+            for _ in event.hits:
+                _.update_theta()
         events_sorted.append(sorted(event.hits, key=attrgetter(parameter)))
+
     return events_sorted
 
 #method that takes as input the required amount of bins,
@@ -70,10 +78,12 @@ def get_bins(bins_count,parameter):
                 if b*number_of_hits_of_event/bins_count<index<(b + 1)*number_of_hits_of_event/bins_count:
                     bin.append(event[index])
         all_events_bins.append(bins)
+        print(all_events_bins)
     return all_events_bins
 
 
-get_bins(4,'y')
+get_bins(4,'theta')
+
 
 '''
 def sort_by_y():
