@@ -172,23 +172,38 @@ class smallHopfieldNetwork():
         print("Energy = " + str(energies[-1]))
 
 
-    def tracks(self, activation_threshold=0):
+    def tracks(self, activation_threshold : list=None):
         # What the papers say:  The answer is given by the final set of active Neurons
         #                       All sets of Neurons connected together are considered as track candidates
         #                       
         # IDEA: All neurons that share a hit and are both connected are track candidates
+        if activation_threshold is None:
+            activation_threshold = [0, 0]
         candidates = []
-        for con in range(self.c2):
-            # go over all segments (coming from hits in m1) that connect to the current con 
-            for i in range(self.c1):
-                n1_idx = i * self.c2 + con 
-                # go over all segments coming from 'con' that connect to all hits in m3
-                for j in range(self.c3): 
-                    n2_idx = con * self.c3 + j
+        # for con in range(self.c2):
+        #     # go over all segments (coming from hits in m1) that connect to the current con
+        #     for i in range(self.c1):
+        #         n1_idx = i * self.c2 + con
+        #         # go over all segments coming from 'con' that connect to all hits in m3
+        #         for j in range(self.c3):
+        #             n2_idx = con * self.c3 + j
+        #
+        #             # if both are over the activaten threshold the two segments are a track candidate
+        #             if self.N1[n1_idx] > activation_threshold and self.N2[n2_idx] > activation_threshold:
+        #                 candidates.append((n1_idx, n2_idx))
 
-                    # if both are over the activaten threshold the two segments are a track candidate
-                    if self.N1[n1_idx] > activation_threshold and self.N2[n2_idx] > activation_threshold:
-                        candidates.append((n1_idx, n2_idx))
+        # New method for computing the tracks (using above concepts) --------------------------
+
+        l1 = np.sqrt(len(self.N1))
+        l2 = np.sqrt(len(self.N2))
+        for i, state1 in enumerate(self.N1):
+            for j, state2 in enumerate(self.N2):
+                if state1 < activation_threshold[0] or state2 < activation_threshold[1]:
+                    continue
+                if int(i % l1) == int(j // l2):
+                    candidates.append(em.track([self.m1_hits[int(i / l1)],
+                                                self.m2_hits[int(i % l1)],
+                                                self.m3_hits[int(j % l2)]]))
 
         return candidates       
 
@@ -212,6 +227,13 @@ class smallHopfieldNetwork():
         print("| # N2 <= act_threshold| " + str(len(self.N2[self.N2 <= activation_threshold])))
         print("+----------------------+--------------------------------+")
 
+    def plot_network_result(self, activation_threshold=None):
+        if activation_threshold:
+            t = self.tracks(activation_threshold=activation_threshold)
+        else:
+            t = self.tracks()
+        eg.plot_tracks_and_modules(t, [m1, m2, m3])
+
 
 if __name__ == "__main__":
     # loading some event
@@ -225,7 +247,7 @@ if __name__ == "__main__":
 
     # Generating a test event to work with
     tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
-                                     num_tracks=3, reconstructable_tracks=True)[0]
+                                     num_tracks=4, reconstructable_tracks=True)[0]
     modules = eg.tracks_to_modules(tracks)
     eg.plot_tracks_and_modules(tracks, modules)
 
@@ -235,10 +257,10 @@ if __name__ == "__main__":
     my_hopfield = smallHopfieldNetwork(m1=m1, m2=m2, m3=m3)
     my_hopfield.network_stats()
     my_hopfield.converge()
-    print("Number of Track Candidates: " + str(len(my_hopfield.tracks())))
+    threshold = [0.2, 0.2]
+    print("Number of Track Candidates: " + str(len(my_hopfield.tracks(activation_threshold=threshold))))
     my_hopfield.network_stats()
-    print(my_hopfield.N1)
-    print(tracks)
+    my_hopfield.plot_network_result(activation_threshold=threshold)
     
 
 exit()
