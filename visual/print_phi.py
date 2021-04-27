@@ -302,3 +302,65 @@ def print_event_3d_phi(event, tracks, x=2, y=0, phix=0, phiy=1, track_color=0, r
         plt.pause(.001)
     else:
       plt.show()
+
+
+def print_event_3d_3phi(event, tracks , track_color=0, rotate=False, filename='event_3d_3phi', save_to_file=False):
+  fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
+  ax = plt.axes(projection='3d')
+
+  if len(tracks) > 0:
+    count = 0
+    for t in [t for t in tracks if len(t.hits)>=3]:
+      ax.scatter3D(
+        [hit_phi(h[0], h[1]) for h in t.hits],
+        [hit_phi(h[1], h[2]) for h in t.hits],
+        [hit_phi(h[2], h[0]) for h in t.hits],
+        color=colors[count % len(colors)],
+        s=2*scale
+      )
+
+      ax.plot3D(
+        [hit_phi(h[0], h[1]) for h in t.hits],
+        [hit_phi(h[1], h[2]) for h in t.hits],
+        [hit_phi(h[2], h[0]) for h in t.hits],
+        color=colors[count % len(colors)],
+        linewidth=1
+      )
+      count += 1
+
+  plt.tick_params(axis='both', which='major', labelsize=4*scale)
+  ax.set_xlabel("φ", fontdict={'fontsize': 4*scale})
+  ax.set_ylabel("θ", fontdict={'fontsize': 4*scale})
+  ax.set_zlabel("Ψ", fontdict={'fontsize': 4*scale}, rotation='horizontal')
+
+  if save_to_file:
+    plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+  else:
+    if rotate:
+      for angle in range(0, 360):
+        ax.view_init(10, angle)
+        plt.draw()
+        plt.pause(.001)
+    else:
+      plt.show()
+
+
+def test(event, tracks , track_color=0, rotate=False, filename='event_3d_3phi', save_to_file=False):
+  fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
+  ax = plt.axes(projection='3d')
+
+  if len(tracks) > 0:
+    count = 0
+    for t in [t for t in tracks if len(t.hits)>=3]:
+      ax.scatter3D(
+        [h.x for h in t.hits],
+        [h.y for h in t.hits],
+        [h.z for h in t.hits],
+        color=colors[count % len(colors)],
+        s=2*scale
+      )
+    count += 1
+
+
+  plt.show()
