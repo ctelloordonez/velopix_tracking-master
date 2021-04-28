@@ -69,20 +69,35 @@ def get_bins(bins_count,parameter):
     events= sort_by(parameter)
     all_events_bins=[]
     for event in events:
-        print(event)
         number_of_hits_of_event=len(event)
-        print(len(event))
         bins= [[] for i in range(bins_count)]
         for index in range(len(event)):
             for b,bin in enumerate(bins):
                 if b*number_of_hits_of_event/bins_count<index<(b + 1)*number_of_hits_of_event/bins_count:
                     bin.append(event[index])
         all_events_bins.append(bins)
+    return all_events_bins
+
+#this method bins the hits by module.
+#this method starts by calling the sorting method above
+
+def get_bins_by_module():
+    events= sort_by('z')
+    all_events_bins=[]
+    for event in events:
+        print(event)
+        number_of_hits_of_event=len(event)
+        bins= [[] for i in range(52)]
+        for hit in event:
+            module = hit.module_number
+            print(module)
+            bins[module].append(hit)
+        all_events_bins.append(bins)
         print(all_events_bins)
     return all_events_bins
 
 
-get_bins(4,'theta')
+get_bins_by_module()
 
 
 '''
