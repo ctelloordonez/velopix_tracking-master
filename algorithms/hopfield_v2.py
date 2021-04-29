@@ -66,9 +66,12 @@ class Hopfield:
                     self.N_info[idx, n_idx, 2] = norm_dist
 
     def init_weights(self):
+        #### get params from the dict #######
         alpha = self.p["ALPHA"]
         beta = self.p["BETA"]
         gamma = self.p["GAMMA"]
+        #####################################
+
         self.W = np.zeros(
             shape=(self.modules_count - 2, self.max_neurons, self.max_neurons,)
         )
@@ -80,7 +83,8 @@ class Hopfield:
                 for i in range(self.hit_counts[w_idx]):
                     ln_idx = i * self.hit_counts[w_idx + 1] + con_idx  # left_neuron_idx
                     for j in range(self.hit_counts[w_idx + 2]):
-                        rn_idx = con_idx * self.hit_counts[w_idx + 1] + j
+                        # went out of bounds...
+                        rn_idx = con_idx * self.hit_counts[w_idx + 2] + j
 
                         theta = abs(
                             self.N_info[w_idx, ln_idx, 0]
@@ -97,10 +101,69 @@ class Hopfield:
                         )
 
     def update(self):
-        pass
+        b = self.p["B"]
+        t = self.p["T"]
+        # I think here we need to look at the first neurons,
+        # then all the neurons in beween as they are dependent on two other layers of neurons
+        # then the last layer of the neurons as they only dep on one side
+
+        for idx in range(self.modules_count - 2):
+            if idx == 0:
+                pass
+            if idx == self.modules_count - 1:
+                pass
+            c1 = self.hit_counts[idx]
+            c2 = self.hit_counts[idx + 1]
+
+            # loop over all neurons in the current layer we are looking at
+            for i in range(c1 * c2):
+                update = 0
+                if idx > 0:
+                    update += self.W[idx, i, :] @ self.N[idx + 1, :]
+                if idx < c1 * c2 - 1:
+                    update += self.N[idx, :].T @ self.W[idx, :, i]
+
+                # left module and right module hit id -> current neuron connects hit lm_id with hit rn_id
+                lm_id = i // c2
+                rm_id = i % c2
+
+                # there can be a lot improved runtime wise with storing the sums and adj
+                # but too complicated for now
+                # all segments mapping to the hit in m1 -> the left module
+                m1h = np.sum(self.N[idx, lm_id * c2 : (lm_id + 1) * c2])
+
+                # all segments mapping to the hit in m2 - the right module
+                m2h = np.sum(self.N[idx, : c1 * c2].reshape(c2, c1)[rm_id, :])
+
+                # we need to substact the neuron of the segment 2 times because we add it 2 times
+                pen = m1h + m2h - 2 * self.N[idx, i]
+
+                self.N[idx, i] = 0.5 * (1 + tanh(update / (t) - b * pen / (t)))
 
     def energy(self):
-        pass
+        b = self.p["B"]
+
+        E = 0
+        bifurc_pen = 0
+        for idx in range(self.modules_count - 2):
+            c1 = self.hit_counts[idx]
+            c2 = self.hit_counts[idx + 1]
+            c3 = self.hit_counts[idx + 2]
+
+            N1_pen = self.N[idx, : c1 * c2].reshape(c2, c1)
+            N2_pen = self.N[idx + 1, : c2 * c3].reshape(c2, c3)
+            bifurc_pen = (
+                np.sum(np.trace(N1_pen @ N1_pen.T))
+                + np.sum(np.trace(N2_pen @ N2_pen.T))
+                - np.sum(self.N[idx, :] * self.N[idx, :])
+                - np.sum(self.N[idx + 1, :] * self.N[idx + 1, :])
+            )
+
+            E += (
+                -0.5 * (self.N[idx, :].T @ self.W[idx, :, :] @ self.N[idx + 1, :])
+                + b * bifurc_pen
+            )
+        return E
 
     def converge(self):
         pass
@@ -159,5 +222,8 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules = prepare_instance(num_modules=4, plot_events=False, num_tracks=5)
+    modules = prepare_instance(num_modules=10, plot_events=True, num_tracks=20)
     my_instance = Hopfield(modules=modules, parameters=parameters)
+    for i in range(10):
+        print(my_instance.energy())
+        my_instance.update()
