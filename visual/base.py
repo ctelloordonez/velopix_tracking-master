@@ -86,7 +86,7 @@ def print_clustered_2d(event, tracks=[], bins=[], x=2, y=0, track_color=0, filen
     plt.scatter(
       [h[x] for h in bin],
       [h[y] for h in bin],
-      color=colors[b * 2],
+      color=colors[b * 2 % len(colors)],
       s=2 * scale
     )
 
