@@ -304,7 +304,7 @@ def print_event_3d_phi(event, tracks, x=2, y=0, phix=0, phiy=1, track_color=0, r
       plt.show()
 
 
-def print_event_3d_3phi(event, tracks , track_color=0, rotate=False, filename='event_3d_3phi', save_to_file=False):
+def print_event_3d_3phi(event, tracks, offset=0, rotate=False, filename='event_3d_3phi', save_to_file=False):
   fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
   ax = plt.axes(projection='3d')
 
@@ -313,21 +313,22 @@ def print_event_3d_3phi(event, tracks , track_color=0, rotate=False, filename='e
     for t in [t for t in tracks if len(t.hits)>=3]:
       ax.scatter3D(
         [hit_phi(h[0], h[1]) for h in t.hits],
-        [hit_phi(h[1], h[2]) for h in t.hits],
-        [hit_phi(h[2], h[0]) for h in t.hits],
+        [hit_phi(h[1], h[2]-offset) for h in t.hits],
+        [hit_phi(h[2]-offset, h[0]) for h in t.hits],
         color=colors[count % len(colors)],
         s=2*scale
       )
 
       ax.plot3D(
         [hit_phi(h[0], h[1]) for h in t.hits],
-        [hit_phi(h[1], h[2]) for h in t.hits],
-        [hit_phi(h[2], h[0]) for h in t.hits],
+        [hit_phi(h[1], h[2]-offset) for h in t.hits],
+        [hit_phi(h[2]-offset, h[0]) for h in t.hits],
         color=colors[count % len(colors)],
         linewidth=1
       )
       count += 1
 
+  plt.title(filename)
   plt.tick_params(axis='both', which='major', labelsize=4*scale)
   ax.set_xlabel("φ", fontdict={'fontsize': 4*scale})
   ax.set_ylabel("θ", fontdict={'fontsize': 4*scale})
@@ -344,3 +345,94 @@ def print_event_3d_3phi(event, tracks , track_color=0, rotate=False, filename='e
         plt.pause(.001)
     else:
       plt.show()
+
+
+def plot_phi_by_module(event, tracks, filename='phi by module', save_to_file=False):
+    fig = plt.figure()
+    ax = plt.axes()
+
+    if len(tracks) > 0:
+        count = 0
+        for t in [t for t in tracks]:
+            ax.plot(
+              [h.module_number for h in event.hits if h in t],
+              [hit_phi(h.x, h.y) for h in event.hits if h in t],
+              color=colors[count % len(colors)],
+              alpha=0.4,
+              linewidth=1
+            )
+            ax.scatter(
+              [h.module_number for h in event.hits if h in t],
+              [hit_phi(h.x, h.y) for h in event.hits if h in t],
+              color=colors[count % len(colors)],
+              s=2 * scale
+            )
+            count += 1
+
+    ax.set_xlabel("module number", fontdict={'fontsize': 4 * scale})
+    ax.set_ylabel("phi", fontdict={'fontsize': 4 * scale})
+
+    if save_to_file:
+        plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+
+def plot_projection(event, tracks, filename='projection_idea1', save_to_file=False):
+    fig = plt.figure()
+    ax = plt.axes()
+    # ax = plt.axes(projection='3d')
+
+    if len(tracks) > 0:
+        count = 0
+        for t in [t for t in tracks]:
+            ax.plot(
+              # [h.module_number for h in event.hits if h in t],
+              [hit_phi(h.x, h.y) for h in event.hits if h in t],
+              [hit_phi(h.x, h.y) for h in event.hits if h in t],
+              # [hit_phi(c_projection(h, 0), c_projection(h, 1)) for h in event.hits if h in t],
+              color=colors[count % len(colors)],
+              alpha=0.4,
+              linewidth=1
+            )
+            ax.scatter(
+              # [h.module_number for h in event.hits if h in t],
+              [hit_phi(h.x, h.y) for h in event.hits if h in t],
+              [hit_phi(h.x, h.y) for h in event.hits if h in t],
+              # [hit_phi(c_projection(h, 0), c_projection(h, 1)) for h in event.hits if h in t],
+              color=colors[count % len(colors)],
+              s=2 * scale
+            )
+            count += 1
+
+    # else:
+    #     plt.scatter(
+    #       [h.module_number for h in event.hits],
+    #       # [hit_phi(h.x, h.y) for h in t.hits],
+    #       [hit_phi(c_projection(h, 0), c_projection(h, 1)) for h in event.hits],
+    #       color=default_color,
+    #       s=2 * scale
+    #     )
+
+    ax.set_xlabel("projection phi", fontdict={'fontsize': 4 * scale})
+    ax.set_ylabel("phi", fontdict={'fontsize': 4 * scale})
+    # ax.set_zlabel("projection phi", fontdict={'fontsize': 4 * scale})
+
+    if save_to_file:
+        plt.savefig(filename + ".png", bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()
+
+
+# def c_projection(hit, c):
+#     return abs((1/abs(hit.z - 2000)) * hit[c])
+
+
+def c_projection(hit, c):
+    return hit_r(hit.x, hit.y) / (hit.module_number + 1)
+    # return hit[c] / hit_r(hit.x, hit.y)
+    # return (1 / abs(hit.z - 2000)) * hit[c]
+    # return (1 / abs(hit.z - 1)) * hit[c]
+    # return abs((1/abs(hit.z - 2000)) * hit[c])
