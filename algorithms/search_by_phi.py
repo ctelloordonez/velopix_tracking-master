@@ -4,8 +4,8 @@ from event_model import event_model as em
 
 
 class SearchByPhi:
-    def __init__(self, hits):
-        self.hits = sort_by_phi(hits) # sort hits by phi
+    def __init__(self, event):
+        self.hits = sort_by_phi(event.hits) # sort hits by phi
 
     def solve(self):
         tracks = [] # list of tracks found
@@ -50,36 +50,6 @@ class SearchByPhi:
         if len(current_track) > 1:
             tracks.append(em.track(current_track)) # append final track if longer than 1
 
-
-                # if h.module_number == current_track[0].module_number - 2:
-                #     if abs(math.atan2(h.y, h.x) - math.atan2(current_track[0].y, current_track[0].x)) < 0.1:
-                #         current_track.insert(0, h)
-                #
-                # elif h.module_number == current_track[-1].module_number + 2:
-                #     if abs(math.atan2(h.y, h.x) - math.atan2(current_track[-1].y, current_track[-1].x) < 0.1):
-                #         current_track.append(h)
-                #
-                # elif skipped <= 0:
-                #     print('hi')
-                #     if h.module_number == current_track[0].module_number - 4:
-                #         if abs(math.atan2(h.y, h.x) - math.atan2(current_track[0].y, current_track[0].x)) < 0.1:
-                #             current_track.insert(0, h)
-                #             skipped += 1
-                #     elif h.module_number == current_track[-1].module_number + 4:
-                #         if abs(math.atan2(h.y, h.x) - math.atan2(current_track[-1].y, current_track[-1].x) < 0.1):
-                #             current_track.append(h)
-                #             skipped += 1
-                #     else:
-                #         skipped = 0
-                #         tracks.append(em.track(current_track))
-                #         current_track = []
-                #         current_track.append(h)
-                # else:
-                #     skipped = 0
-                #     tracks.append(em.track(current_track))
-                #     current_track = []
-                #     current_track.append(h)
-
         return tracks
 
 
@@ -89,6 +59,4 @@ def sort_by_phi(hits):
         phis.append(math.atan2(h.y, h.x))
     sorted_index = np.argsort(phis)
     x = np.array(hits)[sorted_index]
-    # for i in x:
-    #     print(f'{math.atan2(i.y, i.x)}, {i.module_number}')
     return x
