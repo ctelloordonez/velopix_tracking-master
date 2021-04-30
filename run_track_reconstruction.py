@@ -7,9 +7,10 @@ from validator import validator_lite as vl
 
 # Solvers
 from algorithms.track_following import track_following
+from algorithms.search_by_phi import SearchByPhi
 
 solutions = {
-  "track_following": []
+  "search_by_phi": []
 }
 validation_data = []
 
@@ -17,24 +18,23 @@ validation_data = []
 track_following = track_following()
 
 # Iterate all events
-for (dirpath, dirnames, filenames) in os.walk("events"):
-  for i, filename in enumerate(filenames):
-    # Get an event
-    f = open(os.path.realpath(os.path.join(dirpath, filename)))
-    json_data = json.loads(f.read())
-    event = em.event(json_data)
-    f.close()
+for (dirpath, dirnames, filenames) in os.walk("events/small_dataset"):
+    for i, filename in enumerate(filenames):
+        # Get an event
+        f = open(os.path.realpath(os.path.join(dirpath, filename)))
+        json_data = json.loads(f.read())
+        event = em.event(json_data)
+        f.close()
 
-    # Do track reconstruction
-    print("Reconstructing event %i..." % (i))
-    tracks = track_following.solve(event)
+        # Do track reconstruction
+        print("Reconstructing event %i..." % (i))
 
-    # Append the solution and json_data
-    solutions["track_following"].append(tracks)
-    validation_data.append(json_data)
+        # Append the solution and json_data
+        solutions["search_by_phi"].append(SearchByPhi(event).solve())
+        validation_data.append(json_data)
 
 # Validate the solutions
 for k, v in iter(sorted(solutions.items())):
-  print("\nValidating tracks from %s:" % (k))
-  vl.validate_print(validation_data, v)
-  print()
+    print("\nValidating tracks from %s:" % (k))
+    vl.validate_print(validation_data, v)
+    print()
