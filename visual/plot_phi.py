@@ -10,7 +10,8 @@ from algorithms.graph_dfs import graph_dfs
 from algorithms.track_following import track_following
 from algorithms.search_by_phi import SearchByPhi
 from visual.print_phi import print_event_2d_phi, print_event_3d_phi, \
-    print_event_2d_2phi, print_event_2d_phi_r, print_event_2d_2phi_r, print_event_3d_3phi, plot_projection
+    print_event_2d_2phi, print_event_2d_phi_r, print_event_2d_2phi_r, print_event_3d_3phi, plot_projection, \
+    plot_phi_by_module
 from data_analysis.events_analysis import tracks_from_data
 
 solutions = {}
@@ -31,8 +32,8 @@ solutions["search_by_phi"] = search_by_phi.solve()
 
 save_to_file = True
 
-plot_projection(event, tracks, filename='test_full', save_to_file=True)
-plot_projection(event, solutions["search_by_phi"], filename='test', save_to_file=True)
+plot_phi_by_module(event, tracks, filename='phi_by_module_full', save_to_file=True)
+plot_phi_by_module(event, solutions["search_by_phi"], filename='phi_by_module_search_by_phi', save_to_file=True)
 
 # print_event_2d_phi(event, tracks, x=2, phix=0, phiy=1, filename="minibias event0 phi by z", save_to_file=True)
 # print_event_2d_phi(event, tracks, x=0, phix=1, phiy=2, filename="minibias event0 theta by x", save_to_file=True)
