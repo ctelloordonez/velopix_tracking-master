@@ -47,7 +47,8 @@ class SearchByPhi:
                     tracks.append(em.track(current_track)) # add it to the list of tracks found
                 current_track = [] # Reset current track
                 current_track.append(h) # Add the hit as the initial hit of the track
-        tracks.append(em.track(current_track)) # append final track ??
+        if len(current_track) > 1:
+            tracks.append(em.track(current_track)) # append final track if longer than 1
 
 
                 # if h.module_number == current_track[0].module_number - 2:
