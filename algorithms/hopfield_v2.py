@@ -166,6 +166,25 @@ class Hopfield:
         return E
 
     def converge(self):
+        # Basically keep updating until the difference in Energy between timesteps is lower than 0.0005 (Based on Stimfple-Abele)
+        # Passaleva uses a different kind of convergence i think (4)
+        energies = [self.energy()] # store all energies (not fastest but maybe nice for visualisations)
+        self.update()
+        energies.append(self.energy())
+        t = 0 # timesteps
+        while abs(abs(energies[-2]) - abs(energies[-1])) >= self.p['convergence_threshold']:
+            self.update()
+            energies.append(self.energy())
+            t += 1
+            print(energies[-1])
+        
+        # self.update()
+        # energies.append(self.energy())
+
+        print("Network Converged after " + str(t) + " steps")
+        print("Energy = " + str(energies[-1]))
+
+    def tracks(self, activation_threshold : list=None, max_activation=False):
         pass
 
     def network_stats(self):
@@ -218,12 +237,12 @@ if __name__ == "__main__":
         #### Threshold ###
         "maxActivation": False,
         "THRESHOLD": 0.2,
+        ##### Convergence ###
+        "convergence_threshold": 0.0005
     }
     ###########
     #######################################################
 
     modules = prepare_instance(num_modules=10, plot_events=True, num_tracks=20)
     my_instance = Hopfield(modules=modules, parameters=parameters)
-    for i in range(10):
-        print(my_instance.energy())
-        my_instance.update()
+    my_instance.converge()
