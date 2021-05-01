@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import inspect
 import os.path
-from math import pi, atan, sin, sqrt, tanh
+from math import pi, atan, sin, sqrt, tanh, cosh
 
 from numpy.core.fromnumeric import shape
 
@@ -42,6 +42,8 @@ class Hopfield:
         self.init_neurons()
         self.init_weights()
 
+        self.extracted_tracks = []
+
     def init_neurons(self, unit=True):
         self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
@@ -65,6 +67,7 @@ class Hopfield:
                     self.N_info[idx, n_idx, 1] = angle_yz
                     self.N_info[idx, n_idx, 2] = norm_dist
 
+
     def init_weights(self):
         #### get params from the dict #######
         alpha = self.p["ALPHA"]
@@ -86,6 +89,12 @@ class Hopfield:
                         # went out of bounds...
                         rn_idx = con_idx * self.hit_counts[w_idx + 2] + j
 
+                        # Constant term from the other group
+                        constant = abs(self.N_info[w_idx, ln_idx, 2]) - abs(self.N_info[w_idx + 1, rn_idx, 2])
+                        constant = (-1 * cosh(constant)) + 2 # this should be high if both terms are similar and low/penalizing if both are not similar
+                        constant = constant * self.p['constant_factor']
+
+                
                         theta = abs(
                             self.N_info[w_idx, ln_idx, 0]
                             - self.N_info[w_idx + 1, rn_idx, 0]
@@ -98,6 +107,7 @@ class Hopfield:
                             alpha
                             * ((1 - sin(theta)) ** beta)
                             * ((1 - sin(phi)) ** gamma)
+                            + constant
                         )
 
     def update(self):
@@ -176,23 +186,63 @@ class Hopfield:
             self.update()
             energies.append(self.energy())
             t += 1
-            print(energies[-1])
+            self.p["T"] = self.p["T"] * self.p["T_decay"]
         
-        # self.update()
-        # energies.append(self.energy())
 
         print("Network Converged after " + str(t) + " steps")
         print("Energy = " + str(energies[-1]))
 
-    def tracks(self, activation_threshold : list=None, max_activation=False):
-        pass
+    def tracks(self, activation_threshold : list=None):
+        if self.extracted_tracks:
+            return self.extracted_tracks
+        # What the papers say:  The answer is given by the final set of active Neurons
+        #                       All sets of Neurons connected together are considered as track candidates
+        #                       
+        # IDEA: All neurons that share a hit and are both connected are track candidates
+        if activation_threshold is None:
+            activation_threshold = [0.1, 0.1]
+        global_candidates = []
+
+        for idx in range(self.modules_count - 2):
+            candidates = []
+            l1 = self.hit_counts[idx]  # number of hits in module 1
+            l2 = self.hit_counts[idx + 1] 
+            l3 = self.hit_counts[idx + 2] 
+            for i, state1 in enumerate(self.N[idx,:]):
+                for j, state2 in enumerate(self.N[idx+1,:]):
+                    if state1 < activation_threshold[0] or state2 < activation_threshold[1]:
+                        continue
+                    # segments are connected via hit in m2
+                    if int(i % l2) == int(j // l3):
+                        candidates.append(em.track([self.m[idx].hits()[int(i // l2)],
+                                                    self.m[idx + 1].hits()[int(i % l2)],
+                                                    self.m[idx + 2].hits()[int(j % l3)]]))
+
+            if self.p["maxActivation"]:
+                candidates = []
+                n1_transform = self.N[idx,:l2*l1].reshape(l2, l1).copy()
+                n2_transform = self.N[idx+1, :l3*l2].reshape(l3,l2).copy()
+                for con in range(l2):  # loop over the connection hits in module 2
+                    h1_idx = np.argmax(n1_transform[con, :])
+                    h3_idx = np.argmax(n2_transform[:, con])
+                    candidates.append(em.track([self.m[idx].hits()[h1_idx],
+                                                self.m[idx + 1].hits()[con],
+                                                self.m[idx + 2].hits()[h3_idx]]))
+                    n1_transform[:, h1_idx] = 0 # set this hit to 0 so it's not chosen again
+                    n2_transform[h3_idx, :] = 0
+                    
+            global_candidates += candidates
+
+        self.extracted_tracks = global_candidates
+
+        return global_candidates
 
     def network_stats(self):
         #  well this could actually be the __repr__ function of our class
         pass
 
     def plot_network_results(self):
-        pass
+        eg.plot_tracks_and_modules(self.extracted_tracks, self.m, title="Hopfield Output")
 
 
 def prepare_instance(even=True, num_modules=10, plot_events=False, num_tracks=3):
@@ -226,16 +276,18 @@ def load_event():
 
 if __name__ == "__main__":
     #################### PARAMETERS #######################
-    ### WHEIGHTS ###
     parameters = {
+        ### WHEIGHTS ###
         "ALPHA": 1,
         "BETA": 10,
         "GAMMA": 10,
+        "constant_factor": 0.0,
         #### UPDATE ###
         "T": 1,
         "B": 1,
+        "T_decay": 1.0,
         #### Threshold ###
-        "maxActivation": False,
+        "maxActivation": True,
         "THRESHOLD": 0.2,
         ##### Convergence ###
         "convergence_threshold": 0.0005
@@ -243,6 +295,10 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules = prepare_instance(num_modules=10, plot_events=True, num_tracks=20)
+    modules = prepare_instance(num_modules=3, plot_events=True, num_tracks=20)
     my_instance = Hopfield(modules=modules, parameters=parameters)
     my_instance.converge()
+
+    print("Number of Track elements: " + str(len(my_instance.tracks())))
+
+    my_instance.plot_network_results()
