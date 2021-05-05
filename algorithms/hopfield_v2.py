@@ -52,8 +52,7 @@ class Hopfield:
     def init_neurons(self, unit=True):
         self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
-            self.N[idx, nc:] = 1
-
+            self.N[idx, nc:] = 0
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
         for idx in range(self.modules_count - 1):
             m1 = self.m[idx]
@@ -122,7 +121,7 @@ class Hopfield:
         # then all the neurons in beween as they are dependent on two other layers of neurons
         # then the last layer of the neurons as they only dep on one side
 
-        for idx in range(self.modules_count - 2):
+        for idx in range(self.modules_count - 1):
             if idx == 0:
                 pass
             if idx == self.modules_count - 1:
@@ -134,9 +133,9 @@ class Hopfield:
             for i in range(c1 * c2):
                 update = 0
                 if idx > 0:
-                    update += self.W[idx, i, :] @ self.N[idx + 1, :]
-                if idx < self.modules_count - 1:
-                    update += self.N[idx, :].T @ self.W[idx, :, i]
+                    update += self.W[idx-1, i, :] @ self.N[idx-1, :]
+                if idx < self.modules_count - 2:
+                    update += self.N[idx+1, :].T @ self.W[idx, :, i]
                 if 0 < idx < self.modules_count - 1:
                     update /= 2
 
@@ -314,26 +313,26 @@ if __name__ == "__main__":
         "constant_factor": 1,
         #### UPDATE ###
         "T": 1,
-        "B": 0,
-        "T_decay": lambda t: max(0.00001, t * 1),
+        "B": 1,
+        "T_decay": lambda t: max(0.00001, t * 0.8),
         #### THRESHOLD ###
         "maxActivation": True,
-        "THRESHOLD": 0,
+        "THRESHOLD": 0.2,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.0005
     }
     ###########
     #######################################################
 
-    modules = load_instance("hopfield_test.txt", plot_events=True)
-    # modules = prepare_instance(num_modules=10, plot_events=True, num_tracks=2,
-    #                            save_to_file="hopfield_test.txt")
+    # modules = load_instance("test.txt", plot_events=True)
+    modules = prepare_instance(num_modules=4, plot_events=True, num_tracks=5,
+                               save_to_file="test.txt")
     my_instance = Hopfield(modules=modules, parameters=parameters)
-    for i in range(len(my_instance.W)):
-        sns.heatmap(my_instance.W[i])
-        plt.show()
-    for i in range(3):
-        print("Hello"+"?"*i, my_instance.N_info[:,:,i])
+    # for i in range(len(my_instance.W)):
+        # sns.heatmap(my_instance.W[i])
+        # plt.show()
+    # for i in range(3):
+    #     print(my_instance.N_info[:,:,i])
     my_instance.converge()
     print(my_instance.N)
 
