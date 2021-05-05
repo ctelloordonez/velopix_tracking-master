@@ -22,7 +22,6 @@ class SearchByConstant:
                     if(len(current_track) >= 2):
                         if( current_track[0].module_number < h.module_number < current_track[-1].module_number):
                             if(checkMonotonicity(current_track[0], h, current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
-                                # add hit to current track
                                 current_track.insert(-2,h)
                             else:
                                 # check other track, add to new track
@@ -56,7 +55,8 @@ class SearchByConstant:
                 # # We skipped 1 module in the track already, hit is in module before the first hit of the track
                 # elif skipped == 1 and h.module_number == current_track[-1].module_number - 2:
                 #     current_track.append(h) # add the hit at the end of the track
-             
+        if len(current_track) > 1:
+            tracks.append(em.track(current_track)) # append final track if longer than 1     
 
         return tracks
 
