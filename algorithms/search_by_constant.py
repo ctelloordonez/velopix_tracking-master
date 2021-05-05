@@ -19,23 +19,32 @@ class SearchByConstant:
             if abs(math.atan2(h.y, h.x) - math.atan2(current_track[-1].y, current_track[-1].x)) < 0.01: 
                 # put the hits apart if track hits are too far apart
                 if 0 <abs(h.module_number - current_track[0].module_number) < 13 : 
-                    if(len(current_track) >= 2 and current_track[0].module_number < h.module_number < current_track[-1].module_number):
-                        if(checkMonotonicity(current_track[0], h, current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
-                            # add hit to current track
-                        else:
-                            # check other track, add to new track
-                    elif(current_track[0].module_number > h.module_number):
-                        if(len(current_track) >= 2):
-                            if(checkMonotonicity(h,current_track[0] , current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
+                    if(len(current_track) >= 2):
+                        if( current_track[0].module_number < h.module_number < current_track[-1].module_number):
+                            if(checkMonotonicity(current_track[0], h, current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
                                 # add hit to current track
+                                current_track.insert(-2,h)
                             else:
                                 # check other track, add to new track
-                    elif(h.module_number > current_track[-1].module_number):
-                        if(len(current_track) >= 2):
-                            if(checkMonotonicity(current_track[0], current_track[-1],h ) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
-                                # add hit to track
-                            else:
-                                # check other track, add to new track
+                        elif(current_track[0].module_number > h.module_number):
+                            if(len(current_track) >= 2):
+                                if(checkMonotonicity(h,current_track[0] , current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
+                                    current_track.insert(0,h)
+                                else:
+                                    # check other track, add to new track
+                        elif(h.module_number > current_track[-1].module_number):
+                            if(len(current_track) >= 2):
+                                if(checkMonotonicity(current_track[0], current_track[-1],h ) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
+                                   current_track.append(h)
+                                else:
+                    elif(h.module_number == current_track[0].module_number + 2):
+                        current_track.append(h)
+                    elif(h.module_number == current_track[0].module_number - 2):
+                        current_track.insert(0,h)
+                    elif(h.module_number == current_track[0].module_number + 4):
+                        current_track.append(h)
+                    elif(h.module_number == current_track[0].module_number - 4):
+                        current_track.insert(0,h)                    
                 elif(0 == abs(h.module_number - current_track[0].module_number)):
                     # do not add hit to track
             else: 
