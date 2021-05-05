@@ -184,6 +184,7 @@ class smallHopfieldNetwork():
     def tracks(self, activation_threshold : list=None, max_activation=False):
         if self.extracted_tracks:
             return self.extracted_tracks
+        print("Starting extraction...")
         # What the papers say:  The answer is given by the final set of active Neurons
         #                       All sets of Neurons connected together are considered as track candidates
         #                       
@@ -227,6 +228,7 @@ class smallHopfieldNetwork():
                 candidates.append(em.track([self.m1_hits[h1_idx],
                                             self.m2_hits[con],
                                             self.m3_hits[h3_idx]]))
+                print(f"{round(con/self.c2*100,2)}% done extracting...")
         self.extracted_tracks = candidates
 
         return candidates
@@ -284,7 +286,7 @@ if __name__ == "__main__":
     tracks = []
     while len(tracks) == 0:
         tracks = eg.generate_test_tracks(allowed_modules=[0, 2, 4], num_test_events=1,
-                                         num_tracks=20, reconstructable_tracks=True,
+                                         num_tracks=50, reconstructable_tracks=True,
                                          random_pool_size=20, dataset="minibias")[0]
     modules = eg.tracks_to_modules(tracks)
     eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")

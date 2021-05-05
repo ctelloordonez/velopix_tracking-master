@@ -84,9 +84,18 @@ def plot_modules(modules, title=None):
     plt.show()
 
 
-def plot_tracks_and_modules(tracks, modules, title=None):
-    [plt.plot([hit.z for hit in track.hits],
-              [hit.y for hit in track.hits], color='black') for track in tracks]
+def plot_tracks_and_modules(tracks, modules, colors=None, title=None):
+    if not colors:
+        [plt.plot([hit.z for hit in track.hits],
+                  [hit.y for hit in track.hits], color='black') for track in tracks]
+    else:
+        current_color = 0
+        for i, track in enumerate(tracks):
+            for j in range(len(track.hits)-1):
+                plt.plot([track.hits[j].z, track.hits[j + 1].z],
+                         [track.hits[j].y, track.hits[j + 1].y],
+                         color=colors[current_color])
+                current_color += 1
     plot_modules(modules, title)
 
 

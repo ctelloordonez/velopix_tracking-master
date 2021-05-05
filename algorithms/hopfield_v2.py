@@ -7,7 +7,10 @@ import sys
 import numpy as np
 import inspect
 import os.path
-from math import pi, atan, sin, sqrt, tanh, cosh
+import matplotlib.pyplot as plt
+from math import pi, atan, sin, sqrt, tanh, cosh, exp
+from visual.color_map import Colormap
+import seaborn as sns
 
 from numpy.core.fromnumeric import shape
 
@@ -31,6 +34,8 @@ class Hopfield:
         # set self variables, such as the maximum size
         self.p = parameters
         self.m = modules
+        self.N = None
+        self.N_info = None
         self.modules_count = len(modules)
         self.hit_counts = [len(module.hits()) for module in self.m]
         self.neuron_count = [
@@ -41,13 +46,13 @@ class Hopfield:
 
         self.init_neurons()
         self.init_weights()
-
         self.extracted_tracks = []
+        self.extracted_track_states = []
 
     def init_neurons(self, unit=True):
         self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
-            self.N[idx, nc:] = 0
+            self.N[idx, nc:] = 1
 
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
         for idx in range(self.modules_count - 1):
@@ -63,8 +68,8 @@ class Hopfield:
                     norm_dist = sqrt(
                         (hit2.y - hit1.y) ** 2 + (hit2.x - hit1.x) ** 2
                     ) / sqrt((hit2.z - hit1.z) ** 2)
-                    self.N_info[idx, n_idx, 0] = angle_xz
-                    self.N_info[idx, n_idx, 1] = angle_yz
+                    self.N_info[idx, n_idx, 0] = abs(angle_xz)
+                    self.N_info[idx, n_idx, 1] = abs(angle_yz)
                     self.N_info[idx, n_idx, 2] = norm_dist
 
 
@@ -90,11 +95,12 @@ class Hopfield:
                         rn_idx = con_idx * self.hit_counts[w_idx + 2] + j
 
                         # Constant term from the other group
-                        constant = abs(self.N_info[w_idx, ln_idx, 2]) - abs(self.N_info[w_idx + 1, rn_idx, 2])
-                        constant = (-1 * cosh(constant)) + 2 # this should be high if both terms are similar and low/penalizing if both are not similar
-                        constant = constant * self.p['constant_factor']
+                        constant = self.N_info[w_idx, ln_idx, 2] - self.N_info[w_idx + 1, rn_idx, 2]
+                        constant = tanh(constant) * (self.p["narrowness"] + 1)  # tanh to force between -1 and 1
+                        constant = (-2 * constant**2) + 1  # this should be high if both terms are similar and low/penalizing if both are not similar
+                        constant = constant * self.p["constant_factor"]
+                        constant = min(max(constant, -self.p["constant_factor"]), self.p["constant_factor"])
 
-                
                         theta = abs(
                             self.N_info[w_idx, ln_idx, 0]
                             - self.N_info[w_idx + 1, rn_idx, 0]
@@ -103,12 +109,11 @@ class Hopfield:
                             self.N_info[w_idx, ln_idx, 1]
                             - self.N_info[w_idx + 1, rn_idx, 1]
                         )
-                        self.W[w_idx, ln_idx, rn_idx] = (
+                        self.W[w_idx, ln_idx, rn_idx] = max(
                             alpha
                             * ((1 - sin(theta)) ** beta)
                             * ((1 - sin(phi)) ** gamma)
-                            + constant
-                        )
+                            + constant, 0)
 
     def update(self):
         b = self.p["B"]
@@ -130,8 +135,10 @@ class Hopfield:
                 update = 0
                 if idx > 0:
                     update += self.W[idx, i, :] @ self.N[idx + 1, :]
-                if idx < c1 * c2 - 1:
+                if idx < self.modules_count - 1:
                     update += self.N[idx, :].T @ self.W[idx, :, i]
+                if 0 < idx < self.modules_count - 1:
+                    update /= 2
 
                 # left module and right module hit id -> current neuron connects hit lm_id with hit rn_id
                 lm_id = i // c2
@@ -140,15 +147,15 @@ class Hopfield:
                 # there can be a lot improved runtime wise with storing the sums and adj
                 # but too complicated for now
                 # all segments mapping to the hit in m1 -> the left module
-                m1h = np.sum(self.N[idx, lm_id * c2 : (lm_id + 1) * c2])
+                m1h = np.sum(self.N[idx, lm_id * c2: (lm_id + 1) * c2])
 
                 # all segments mapping to the hit in m2 - the right module
                 m2h = np.sum(self.N[idx, : c1 * c2].reshape(c2, c1)[rm_id, :])
 
-                # we need to substact the neuron of the segment 2 times because we add it 2 times
+                # we need to subtract the neuron of the segment 2 times because we add it 2 times
                 pen = m1h + m2h - 2 * self.N[idx, i]
 
-                self.N[idx, i] = 0.5 * (1 + tanh(update / (t) - b * pen / (t)))
+                self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
 
     def energy(self):
         b = self.p["B"]
@@ -186,7 +193,7 @@ class Hopfield:
             self.update()
             energies.append(self.energy())
             t += 1
-            self.p["T"] = self.p["T"] * self.p["T_decay"]
+            self.p["T"] = self.p["T_decay"](self.p["T"])
         
 
         print("Network Converged after " + str(t) + " steps")
@@ -202,38 +209,47 @@ class Hopfield:
         if activation_threshold is None:
             activation_threshold = [0.1, 0.1]
         global_candidates = []
+        global_candidate_states = []
 
         for idx in range(self.modules_count - 2):
             candidates = []
+            candidate_states = []
             l1 = self.hit_counts[idx]  # number of hits in module 1
-            l2 = self.hit_counts[idx + 1] 
-            l3 = self.hit_counts[idx + 2] 
-            for i, state1 in enumerate(self.N[idx,:]):
-                for j, state2 in enumerate(self.N[idx+1,:]):
-                    if state1 < activation_threshold[0] or state2 < activation_threshold[1]:
-                        continue
-                    # segments are connected via hit in m2
-                    if int(i % l2) == int(j // l3):
-                        candidates.append(em.track([self.m[idx].hits()[int(i // l2)],
-                                                    self.m[idx + 1].hits()[int(i % l2)],
-                                                    self.m[idx + 2].hits()[int(j % l3)]]))
+            l2 = self.hit_counts[idx + 1]
+            l3 = self.hit_counts[idx + 2]
+            # for i, state1 in enumerate(self.N[idx,:]):
+            #     for j, state2 in enumerate(self.N[idx+1,:]):
+            #         if state1 < activation_threshold[0] or state2 < activation_threshold[1]:
+            #             continue
+            #         # segments are connected via hit in m2
+            #         if int(i % l2) == int(j // l3):
+            #             candidates.append(em.track([self.m[idx].hits()[int(i // l2)],
+            #                                         self.m[idx + 1].hits()[int(i % l2)],
+            #                                         self.m[idx + 2].hits()[int(j % l3)]]))
 
             if self.p["maxActivation"]:
                 candidates = []
-                n1_transform = self.N[idx,:l2*l1].reshape(l2, l1).copy()
-                n2_transform = self.N[idx+1, :l3*l2].reshape(l3,l2).copy()
+                thresh = self.p["THRESHOLD"]
+                n1_transform = self.N[idx, :l2*l1].reshape(l2, l1).copy()
+                n2_transform = self.N[idx+1, :l3*l2].reshape(l3, l2).copy()
                 for con in range(l2):  # loop over the connection hits in module 2
                     h1_idx = np.argmax(n1_transform[con, :])
                     h3_idx = np.argmax(n2_transform[:, con])
+                    if n1_transform[con, h1_idx] < thresh or n2_transform[h3_idx, con] < thresh:
+                        continue
                     candidates.append(em.track([self.m[idx].hits()[h1_idx],
                                                 self.m[idx + 1].hits()[con],
                                                 self.m[idx + 2].hits()[h3_idx]]))
-                    n1_transform[:, h1_idx] = 0 # set this hit to 0 so it's not chosen again
-                    n2_transform[h3_idx, :] = 0
+                    candidate_states.append(n1_transform[con, h1_idx])
+                    candidate_states.append(n2_transform[h3_idx, con])
+                    # n1_transform[:, h1_idx] = 0  # set this hit to 0 so it's not chosen again
+                    # n2_transform[h3_idx, :] = 0
                     
             global_candidates += candidates
+            global_candidate_states += candidate_states
 
         self.extracted_tracks = global_candidates
+        self.extracted_track_states = global_candidate_states
 
         return global_candidates
 
@@ -241,11 +257,22 @@ class Hopfield:
         #  well this could actually be the __repr__ function of our class
         pass
 
-    def plot_network_results(self):
-        eg.plot_tracks_and_modules(self.extracted_tracks, self.m, title="Hopfield Output")
+    def plot_network_results(self, show_states=False):
+        if show_states:
+            # Creates a colormap from blue to red for small to large values respectively
+            c_map = Colormap(0, 1, 2 / 3.0, 0)
+            colors = []
+            [colors.append(c_map.get_color_rgb(v)) for v in self.extracted_track_states]
+            print(c_map.get_color_rgb(0))
+            eg.plot_tracks_and_modules(self.extracted_tracks, self.m,
+                                       colors=colors,
+                                       title="Hopfield Output with states")
+        else:
+            eg.plot_tracks_and_modules(self.extracted_tracks, self.m, title="Hopfield Output")
 
 
-def prepare_instance(even=True, num_modules=10, plot_events=False, num_tracks=3):
+def prepare_instance(even=True, num_modules=10, plot_events=False, num_tracks=3,
+                     save_to_file: str = None):
     if num_modules > 26:
         num_modules = 26
     elif num_modules < 3 or type(num_modules) != int:
@@ -259,46 +286,59 @@ def prepare_instance(even=True, num_modules=10, plot_events=False, num_tracks=3)
         reconstructable_tracks=True,
     )[0]
 
+    if save_to_file:
+        eg.write_tracks(tracks, save_to_file)
+
     modules = eg.tracks_to_modules(tracks)
     if plot_events:
-        eg.plot_tracks_and_modules(tracks, modules)
+        eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
     return modules
 
 
-def load_event():
-    # loading some event
-    # event_path = os.path.join(project_root, "events/bsphiphi/velo_event_12.json")
-    # f = open(event_path)
-    # json_data = json.loads(f.read())
-    # event = em.event(json_data)
-    pass
+def load_instance(file_name, plot_events=False):
+    tracks = eg.read_tracks(file_name)
+    modules = eg.tracks_to_modules(tracks)
+    if plot_events:
+        eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
+    return modules
 
 
 if __name__ == "__main__":
     #################### PARAMETERS #######################
     parameters = {
-        ### WHEIGHTS ###
+        ### WEIGHTS ###
         "ALPHA": 1,
         "BETA": 10,
         "GAMMA": 10,
-        "constant_factor": 0.0,
+        "narrowness": 100,
+        "constant_factor": 1,
         #### UPDATE ###
         "T": 1,
-        "B": 1,
-        "T_decay": 1.0,
-        #### Threshold ###
+        "B": 0,
+        "T_decay": lambda t: max(0.00001, t * 1),
+        #### THRESHOLD ###
         "maxActivation": True,
-        "THRESHOLD": 0.2,
-        ##### Convergence ###
+        "THRESHOLD": 0,
+        ##### CONVERGENCE ###
         "convergence_threshold": 0.0005
     }
     ###########
     #######################################################
 
-    modules = prepare_instance(num_modules=3, plot_events=True, num_tracks=20)
+    modules = load_instance("hopfield_test.txt", plot_events=True)
+    # modules = prepare_instance(num_modules=10, plot_events=True, num_tracks=2,
+    #                            save_to_file="hopfield_test.txt")
     my_instance = Hopfield(modules=modules, parameters=parameters)
+    for i in range(len(my_instance.W)):
+        sns.heatmap(my_instance.W[i])
+        plt.show()
+    for i in range(3):
+        print("Hello"+"?"*i, my_instance.N_info[:,:,i])
     my_instance.converge()
+    print(my_instance.N)
 
     print("Number of Track elements: " + str(len(my_instance.tracks())))
+    print(my_instance.extracted_track_states)
 
-    my_instance.plot_network_results()
+
+    my_instance.plot_network_results(show_states=True)
