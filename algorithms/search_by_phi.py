@@ -14,7 +14,7 @@ class SearchByPhi:
         self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
         skipped = 0 # variable to keep track of the number of modules skipped
         for h in self.hits: # loop over the hits in the event
-            if abs(math.atan2(h.y, h.x) - math.atan2(current_track[0].y, current_track[0].x)) < 0.01: # if the hits polar angle is withing range of the track
+            if abs(math.atan2(h.y, h.x) - math.atan2(current_track[-1].y, current_track[-1].x)) < 0.05: # if the hits polar angle is withing range of the track
                 # We skipped 1 module in the track already, hit is in module after the first hit of the track
                 if skipped == 1 and h.module_number == current_track[0].module_number + 2: 
                     current_track.insert(0, h) # add the hit after the first track hit
