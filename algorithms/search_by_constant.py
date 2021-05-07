@@ -124,48 +124,48 @@ class SearchByConstant:
 
         return tracks
 
-    def solve2(self):
-        tracks = [] # list of tracks found
-        current_track = [] # list of hits representing the track currently under consideration
-        current_track.append(self.hits[0]) # initialize by considering the first hit
-        self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
-        skipped = 0 # variable to keep track of the number of modules skipped
+    # def solve2(self):
+    #     tracks = [] # list of tracks found
+    #     current_track = [] # list of hits representing the track currently under consideration
+    #     current_track.append(self.hits[0]) # initialize by considering the first hit
+    #     self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
+    #     skipped = 0 # variable to keep track of the number of modules skipped
 
-        for h in self.hits: # loop over the hits in the event
-            # if the hits polar angle is withing range of the last hit in the track ( rather than first in first implementation)
-            if abs(math.atan2(h.y, h.x) - math.atan2(current_track[-1].y, current_track[-1].x)) < 0.01: 
-                # put the hits apart if track hits are too far apart
-                if 0 <abs(h.module_number - current_track[0].module_number) < 13 : 
-                    if(len(current_track) >= 2):
-                        if( current_track[0].module_number < h.module_number < current_track[-1].module_number):
-                            if(checkMonotonicity(current_track[0], h, current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
-                                current_track.insert(-2,h)
-                            # else:
-                            #     # check other track, add to new track
-                        elif(current_track[0].module_number > h.module_number):
-                            if(len(current_track) >= 2):
-                                if(checkMonotonicity(h,current_track[0] , current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
-                                    current_track.insert(0,h)
-                                # else:
-                                #     # check other track, add to new track
-                        elif(h.module_number > current_track[-1].module_number):
-                            if(len(current_track) >= 2):
-                                if(checkMonotonicity(current_track[0], current_track[-1],h ) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
-                                   current_track.append(h)
-                                # else:
-                    elif(h.module_number == current_track[0].module_number + 2):
-                        current_track.append(h)
-                    elif(h.module_number == current_track[0].module_number - 2):
-                        current_track.insert(0,h)
-                    elif(h.module_number == current_track[0].module_number + 4):
-                        current_track.append(h)
-                    elif(h.module_number == current_track[0].module_number - 4):
-                        current_track.insert(0,h)                    
-                elif(0 == abs(h.module_number - current_track[0].module_number)):
-                    # do not add hit to track
-        # if len(current_track) > 1:
-        #     tracks.append(em.track(current_track)) # append final track if longer than 1     
-        return tracks
+    #     for h in self.hits: # loop over the hits in the event
+    #         # if the hits polar angle is withing range of the last hit in the track ( rather than first in first implementation)
+    #         if abs(math.atan2(h.y, h.x) - math.atan2(current_track[-1].y, current_track[-1].x)) < 0.01: 
+    #             # put the hits apart if track hits are too far apart
+    #             if 0 <abs(h.module_number - current_track[0].module_number) < 13 : 
+    #                 if(len(current_track) >= 2):
+    #                     if( current_track[0].module_number < h.module_number < current_track[-1].module_number):
+    #                         if(checkMonotonicity(current_track[0], h, current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
+    #                             current_track.insert(-2,h)
+    #                         # else:
+    #                         #     # check other track, add to new track
+    #                     elif(current_track[0].module_number > h.module_number):
+    #                         if(len(current_track) >= 2):
+    #                             if(checkMonotonicity(h,current_track[0] , current_track[-1]) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
+    #                                 current_track.insert(0,h)
+    #                             # else:
+    #                             #     # check other track, add to new track
+    #                     elif(h.module_number > current_track[-1].module_number):
+    #                         if(len(current_track) >= 2):
+    #                             if(checkMonotonicity(current_track[0], current_track[-1],h ) and abs(calculateConstant(current_track[0] , h ) - calculateConstant( h,current_track[-1])) < 0.01):
+    #                                current_track.append(h)
+    #                             # else:
+    #                 elif(h.module_number == current_track[0].module_number + 2):
+    #                     current_track.append(h)
+    #                 elif(h.module_number == current_track[0].module_number - 2):
+    #                     current_track.insert(0,h)
+    #                 elif(h.module_number == current_track[0].module_number + 4):
+    #                     current_track.append(h)
+    #                 elif(h.module_number == current_track[0].module_number - 4):
+    #                     current_track.insert(0,h)                    
+    #             elif(0 == abs(h.module_number - current_track[0].module_number)):
+    #                 # do not add hit to track
+    #     # if len(current_track) > 1:
+    #     #     tracks.append(em.track(current_track)) # append final track if longer than 1     
+    #   return tracks
 
 # using the constant 
 def solve3 (self):
@@ -326,7 +326,7 @@ def solve4 (self):
                             hitHhasBeenAdded = True
                              
                         if(h.module_number < current_track[0].module_number ): # hit h is before the current start of the track
-                                current_track.insert(0,h) # add it at the beginning
+                            current_track.insert(0,h) # add it at the beginning
                             hitHhasBeenAdded = True
                             
                         if(current_track[0].module_number < h.module_number < current_track[-1].module_number ): # hit h is in between the current track ends
