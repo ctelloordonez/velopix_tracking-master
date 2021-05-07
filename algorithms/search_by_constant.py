@@ -13,20 +13,20 @@ class SearchByConstant:
 
         '***********Parameters ***************'
         NumberOfPreviousTracks = 1      # Parameter for number of previous tracks to check
-        # KeepingTrackOfModules = np.zeros(NumberOfPreviousTracks,52)
         XminY = 0.01 # accepted deviation between the x and y ratio values of the track and a hit h
         YminZ = 0.01 # accepted deviation between the z and y ratio values of the track and a hit h
         XminZ = 0.01 # accepted deviation between the x and z ratio values of the track and a hit h
         angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
         trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
-        beginOrEnd = 0 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to commpare to last hit of the track
-        '**********************'
+        beginOrEnd = 0 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
+        '*************************************'
         
         tracks = [] # list of tracks found
         current_track = [] # list of hits representing the track currently under consideration
         current_track.append(self.hits[0]) # initialize by considering the first hit
         self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
         skipped = 0 # variable to keep track of the number of modules skipped
+        # KeepingTrackOfModules = np.zeros(NumberOfPreviousTracks,52)
 
      
         for h in self.hits: # loop over the hits in the event
@@ -55,26 +55,27 @@ class SearchByConstant:
                 else:
                     hitHhasBeenAdded = False # Boolean to see whether the hit gets added to a track
                     for i in range(NumberOfPreviousTracks):
-                        xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
+                        if(i < len(tracks)):
+                            xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
 
-                        xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
-                        yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
-                        zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
+                            xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
+                            yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
+                            zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
 
-                        # for straight lines, xRelation, yRelation and zRelation should have a the same value
-                        if(abs(xRelation-yRelation) <=0.01 and abs(yRelation-zRelation) <=0.01 and (xRelation-zRelation) <=0.01 ):
-                            if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
-                                tracks[-1-i].hits.append(h) # add it at the end
-                                hitHhasBeenAdded = True
-                                break 
-                            if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
-                                tracks[-1-i].hits.insert(0,h) # add it at the beginning
-                                hitHhasBeenAdded = True
-                                break
-                            if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
-                                tracks[-1-i].hits.insert(1,h) # add it somewhere in between
-                                hitHhasBeenAdded = True
-                                break
+                            # for straight lines, xRelation, yRelation and zRelation should have a the same value
+                            if(abs(xRelation-yRelation) <=0.01 and abs(yRelation-zRelation) <=0.01 and (xRelation-zRelation) <=0.01 ):
+                                if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
+                                    tracks[-1-i].hits.append(h) # add it at the end
+                                    hitHhasBeenAdded = True
+                                    break 
+                                if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
+                                    tracks[-1-i].hits.insert(0,h) # add it at the beginning
+                                    hitHhasBeenAdded = True
+                                    break
+                                if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
+                                    tracks[-1-i].hits.insert(1,h) # add it somewhere in between
+                                    hitHhasBeenAdded = True
+                                    break
 
                     # When a hit has not been added to any track, use it as a starting point        
                     if(hitHhasBeenAdded == False):
@@ -87,26 +88,27 @@ class SearchByConstant:
             else: # if hit h is not sufficiently close to the current track
                 hitHhasBeenAdded = False # Boolean to see whether the hit gets added to a track
                 for i in range(NumberOfPreviousTracks):
-                    xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
+                    if(i < len(tracks)):
+                        xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
 
-                    xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
-                    yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
-                    zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
+                        xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
+                        yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
+                        zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
 
-                    # for straight lines, xRelation, yRelation and zRelation should have a the same value
-                    if(abs(xRelation-yRelation) <= XminY and abs(yRelation-zRelation) <= YminZ and (xRelation-zRelation) <= XminZ ):
-                        if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
-                            tracks[-1-i].hits.append(h) # add it at the end
-                            hitHhasBeenAdded = True
-                            break 
-                        if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
-                            tracks[-1-i].hits.insert(0,h) # add it at the beginning
-                            hitHhasBeenAdded = True
-                            break
-                        if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
-                            tracks[-1-i].hits.insert(1,h) # add it somewhere in between
-                            hitHhasBeenAdded = True
-                            break
+                        # for straight lines, xRelation, yRelation and zRelation should have a the same value
+                        if(abs(xRelation-yRelation) <= XminY and abs(yRelation-zRelation) <= YminZ and (xRelation-zRelation) <= XminZ ):
+                            if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
+                                tracks[-1-i].hits.append(h) # add it at the end
+                                hitHhasBeenAdded = True
+                                break 
+                            if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
+                                tracks[-1-i].hits.insert(0,h) # add it at the beginning
+                                hitHhasBeenAdded = True
+                                break
+                            if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
+                                tracks[-1-i].hits.insert(1,h) # add it somewhere in between
+                                hitHhasBeenAdded = True
+                                break
 
                 # When a hit has not been added to any track, use it as a starting point        
                 if(hitHhasBeenAdded == False):
