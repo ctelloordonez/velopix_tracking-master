@@ -89,7 +89,8 @@ class SearchByConstant:
                 hitHhasBeenAdded = False # Boolean to see whether the hit gets added to a track
                 for i in range(NumberOfPreviousTracks):
                     if(i < len(tracks)):
-                        xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
+                        xDir,yDir,zDir = calculateDirectionVector(tracks[-
+                        1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
 
                         xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
                         yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
@@ -166,6 +167,210 @@ class SearchByConstant:
         #     tracks.append(em.track(current_track)) # append final track if longer than 1     
         return tracks
 
+# using the constant 
+def solve3 (self):
+
+        '***********Parameters ***************'
+        NumberOfPreviousTracks = 1      # Parameter for number of previous tracks to check
+        constantDifference = 0.01 # accepted deviation in constant values of the track and a hit h
+        angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
+        trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
+        beginOrEnd = 0 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
+        '*************************************'
+        
+        tracks = [] # list of tracks found
+        current_track = [] # list of hits representing the track currently under consideration
+        current_track.append(self.hits[0]) # initialize by considering the first hit
+        self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
+        skipped = 0 # variable to keep track of the number of modules skipped
+        # KeepingTrackOfModules = np.zeros(NumberOfPreviousTracks,52)
+
+     
+        for h in self.hits: # loop over the hits in the event
+            # if the hits polar angle is withing range of the track
+            if abs(math.atan2(h.y, h.x) - math.atan2(current_track[beginOrEnd].y, current_track[beginOrEnd].x)) < angleDifference: 
+                if(len(current_track)<2):
+                    if skipped == 1 and h.module_number == current_track[0].module_number + 2: 
+                        current_track.insert(0, h) # add the hit after the first track hit
+                    # We skipped 1 module in the track already, hit is in module before the first hit of the track
+                    elif skipped == 1 and h.module_number == current_track[-1].module_number - 2:
+                        current_track.append(h) # add the hit at the end of the track
+                    # We did not yet skip a module in the current track,  hit is in module before the first hit of the track
+                    elif h.module_number == current_track[0].module_number - 2:
+                        current_track.insert(0, h) # add the hit after the first track hit
+                    # We did not yet skip a module in the current track,  hit is in module after the last hit of the track
+                    elif h.module_number == current_track[-1].module_number + 2:
+                        current_track.append(h) # add the hit at the end of the track
+                    # We did not yet skip a module in the current track,  hit is 2 modules before the first hit of the track
+                    elif skipped <= 0 and h.module_number == current_track[0].module_number - 4:
+                        current_track.insert(0, h) # add the hit 
+                        skipped += 1 # increase skipped module counter
+                    # We did not yet skip a module in the current track,  hit is 2 modules after the last hit of the track
+                    elif skipped <= 0 and h.module_number == current_track[-1].module_number + 4:
+                        current_track.append(h) # add the hit, skip next module counter
+                        skipped += 1 # increase skipped module counter
+                    else:
+                        skipped = 0 # reset skipped counter
+                        if len(current_track) > trackGreaterThan: # If the current track has a minimal number of hits
+                            tracks.append(em.track(current_track)) # add it to the list of tracks found
+                        current_track = [] # Reset current track
+                        current_track.append(h) # Add the hit as the initial hit of the track
+                else:
+                    hitHhasBeenAdded = False
+                    
+                    if(abs(calculateConstant(current_track[0],h) - calculateConstant(current_track[-1],h)) < constantDifference ):
+                        if(h.module_number > current_track[-1].module_number ): # hit h is after the current end of the track
+                            current_track.hits.append(h) # add it at the end
+                            hitHhasBeenAdded = True
+                        
+                        if(h.module_number < current_track[0].module_number ): # hit h is before the current start of the track
+                            current_track.insert(0,h) # add it at the beginning
+                            hitHhasBeenAdded = True
+                            
+                        if(current_track[0].module_number < h.module_number < current_track[-1].module_number ): # hit h is in between the current track ends
+                            current_track.insert(1,h) # add it somewhere in between
+                            hitHhasBeenAdded = True
+                                
+                    if(hitHhasBeenAdded == False):
+                        skipped = 0 # reset skipped counter
+                        if len(current_track) > trackGreaterThan: # If the current track has a minimal number of hits
+                            tracks.append(em.track(current_track)) # add it to the list of tracks found
+                        current_track = [] # Reset current track
+                        current_track.append(h) # Add the hit as the initial hit of the track
+
+            else: # if hit h is not sufficiently close to the current track
+                hitHhasBeenAdded = False
+                for i in range(NumberOfPreviousTracks):
+                        if(i < len(tracks)):
+                            if(abs(calculateConstant(current_track[0],h) - calculateConstant(current_track[-1],h)) < constantDifference ):
+                                if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
+                                    tracks[-1-i].hits.append(h) # add it at the end
+                                    hitHhasBeenAdded = True
+                                    break 
+                                if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
+                                    tracks[-1-i].hits.insert(0,h) # add it at the beginning
+                                    hitHhasBeenAdded = True
+                                    break
+                                if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
+                                    tracks[-1-i].hits.insert(1,h) # add it somewhere in between
+                                    hitHhasBeenAdded = True
+                                    break
+
+                # When a hit has not been added to any track, use it as a starting point        
+                if(hitHhasBeenAdded == False):
+                    skipped = 0 # reset skipped counter
+                    if len(current_track) > trackGreaterThan: # If the current track has a minimal number of hits
+                        tracks.append(em.track(current_track)) # add it to the list of tracks found
+                    current_track = [] # Reset current track
+                    current_track.append(h) # Add the hit as the initial hit of the track
+
+        if len(current_track) > trackGreaterThan:
+            tracks.append(em.track(current_track)) # append final track if longer than 1
+
+        return tracks
+
+# Using monotonicity
+def solve4 (self):
+
+        '***********Parameters ***************'
+        NumberOfPreviousTracks = 1      # Parameter for number of previous tracks to check
+        MonotoneDifference = 0.01 # accepted deviation r over z ratio values of the track and a hit h
+        angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
+        trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
+        beginOrEnd = 0 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
+        '*************************************'
+        
+        tracks = [] # list of tracks found
+        current_track = [] # list of hits representing the track currently under consideration
+        current_track.append(self.hits[0]) # initialize by considering the first hit
+        self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
+        skipped = 0 # variable to keep track of the number of modules skipped
+        # KeepingTrackOfModules = np.zeros(NumberOfPreviousTracks,52)
+
+     
+        for h in self.hits: # loop over the hits in the event
+            # if the hits polar angle is withing range of the track
+            if abs(math.atan2(h.y, h.x) - math.atan2(current_track[beginOrEnd].y, current_track[beginOrEnd].x)) < angleDifference: 
+                if(len(current_track)<2):
+                    if skipped == 1 and h.module_number == current_track[0].module_number + 2: 
+                        current_track.insert(0, h) # add the hit after the first track hit
+                    # We skipped 1 module in the track already, hit is in module before the first hit of the track
+                    elif skipped == 1 and h.module_number == current_track[-1].module_number - 2:
+                        current_track.append(h) # add the hit at the end of the track
+                    # We did not yet skip a module in the current track,  hit is in module before the first hit of the track
+                    elif h.module_number == current_track[0].module_number - 2:
+                        current_track.insert(0, h) # add the hit after the first track hit
+                    # We did not yet skip a module in the current track,  hit is in module after the last hit of the track
+                    elif h.module_number == current_track[-1].module_number + 2:
+                        current_track.append(h) # add the hit at the end of the track
+                    # We did not yet skip a module in the current track,  hit is 2 modules before the first hit of the track
+                    elif skipped <= 0 and h.module_number == current_track[0].module_number - 4:
+                        current_track.insert(0, h) # add the hit 
+                        skipped += 1 # increase skipped module counter
+                    # We did not yet skip a module in the current track,  hit is 2 modules after the last hit of the track
+                    elif skipped <= 0 and h.module_number == current_track[-1].module_number + 4:
+                        current_track.append(h) # add the hit, skip next module counter
+                        skipped += 1 # increase skipped module counter
+                    else:
+                        skipped = 0 # reset skipped counter
+                        if len(current_track) > trackGreaterThan: # If the current track has a minimal number of hits
+                            tracks.append(em.track(current_track)) # add it to the list of tracks found
+                        current_track = [] # Reset current track
+                        current_track.append(h) # Add the hit as the initial hit of the track
+                else:
+                    hitHhasBeenAdded = False
+                    
+                    if(abs(calculateMonotoneApproximation(current_track[0],h) - calculateMonotoneApproximation(current_track[-1],h)) < MonotoneDifference ):
+                        if(h.module_number > current_track[-1].module_number ): # hit h is after the current end of the track
+                            current_track.hits.append(h) # add it at the end
+                            hitHhasBeenAdded = True
+                             
+                        if(h.module_number < current_track[0].module_number ): # hit h is before the current start of the track
+                                current_track.insert(0,h) # add it at the beginning
+                            hitHhasBeenAdded = True
+                            
+                        if(current_track[0].module_number < h.module_number < current_track[-1].module_number ): # hit h is in between the current track ends
+                            current_track.insert(1,h) # add it somewhere in between
+                            hitHhasBeenAdded = True
+                            
+                    if(hitHhasBeenAdded == False):
+                        skipped = 0 # reset skipped counter
+                        if len(current_track) > trackGreaterThan: # If the current track has a minimal number of hits
+                            tracks.append(em.track(current_track)) # add it to the list of tracks found
+                        current_track = [] # Reset current track
+                        current_track.append(h) # Add the hit as the initial hit of the track
+
+            else: # if hit h is not sufficiently close to the current track
+                hitHhasBeenAdded = False
+                for i in range(NumberOfPreviousTracks):
+                        if(i < len(tracks)):
+                            if(abs(calculateMonotoneApproximation(tracks[-1-i].hits[0],h) - calculateMonotoneApproximation(tracks[-1-i].hits[-1],h)) < MonotoneDifference ):
+                                if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
+                                    tracks[-1-i].hits.append(h) # add it at the end
+                                    hitHhasBeenAdded = True
+                                    break 
+                                if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
+                                    tracks[-1-i].hits.insert(0,h) # add it at the beginning
+                                    hitHhasBeenAdded = True
+                                    break
+                                if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
+                                    tracks[-1-i].hits.insert(1,h) # add it somewhere in between
+                                    hitHhasBeenAdded = True
+                                    break
+
+                # When a hit has not been added to any track, use it as a starting point        
+                if(hitHhasBeenAdded == False):
+                    skipped = 0 # reset skipped counter
+                    if len(current_track) > trackGreaterThan: # If the current track has a minimal number of hits
+                        tracks.append(em.track(current_track)) # add it to the list of tracks found
+                    current_track = [] # Reset current track
+                    current_track.append(h) # Add the hit as the initial hit of the track
+
+        if len(current_track) > trackGreaterThan:
+            tracks.append(em.track(current_track)) # append final track if longer than 1
+
+        return tracks
+
 # sort the hits by polar angle
 def sort_by_phi(hits):
     phis = []
@@ -186,6 +391,13 @@ def sort_by_moduleNumber(hits):
 # Calculate a proposed constant
 def calculateConstant(hit1,hit2):
     return math.sqrt((hit1.x-hit2.x)^2+(hit1.y+hit2.y)^2)/math.sqrt((hit1.z-hit2.z)^2)
+
+def calculateMonotoneApproximation(hit1,hit2):
+    if(hit1.module_number > hit2.module_number):
+        x = (hit1.pol_r - hit2.pol_r)/(hit1.z-hit2.z)
+    if(hit1.module_number < hit2.module_number):
+        x = (hit2.pol_r - hit1.pol_r)/(hit2.z-hit1.z)
+    return x
 
 # Function that checks whether 3 hits are monotone w.r.t polar distance r as a function of module number
 # Put in in order of module number!
