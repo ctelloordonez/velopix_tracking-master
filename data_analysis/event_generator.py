@@ -130,7 +130,8 @@ def generate_test_tracks(allowed_modules: list = range(52), num_tracks=10, num_t
         elif real_num_tracks != num_tracks:
             print(f"Too many tracks expected,"
                   f" returning maximum of {real_num_tracks} instead in event {i}.")
-        test_tracks.append(random.sample(total_tracks, real_num_tracks))
+        test_tracks.append(sorted(random.sample(total_tracks, real_num_tracks),
+                                  key=lambda track: -track.hits[0].y))
 
     return test_tracks
 

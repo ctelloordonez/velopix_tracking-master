@@ -36,23 +36,26 @@ class Hopfield:
         self.m = modules
         self.N = None
         self.N_info = None
+        self.sync_rounds = parameters["sync_rounds"]
         self.modules_count = len(modules)
         self.hit_counts = [len(module.hits()) for module in self.m]
         self.neuron_count = [
             self.hit_counts[i] * self.hit_counts[i + 1]
             for i in range(self.modules_count - 1)
         ]
+        self.flips = 0
         self.max_neurons = max(self.neuron_count)
 
         self.init_neurons()
         self.init_weights()
         self.extracted_tracks = []
         self.extracted_track_states = []
+        self.energies = []
 
     def init_neurons(self, unit=True):
         self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
-            self.N[idx, nc:] = 0
+            self.N[idx, nc:] = 1
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
         for idx in range(self.modules_count - 1):
             m1 = self.m[idx]
@@ -114,12 +117,16 @@ class Hopfield:
                             * ((1 - sin(phi)) ** gamma)
                             + constant, 0)
 
-    def update(self):
+    def update(self, synchronous=False):
         b = self.p["B"]
         t = self.p["T"]
         # I think here we need to look at the first neurons,
         # then all the neurons in beween as they are dependent on two other layers of neurons
         # then the last layer of the neurons as they only dep on one side
+
+        N_sync = None
+        if synchronous:
+            N_sync = self.N.copy()
 
         for idx in range(self.modules_count - 1):
             if idx == 0:
@@ -154,7 +161,15 @@ class Hopfield:
                 # we need to subtract the neuron of the segment 2 times because we add it 2 times
                 pen = m1h + m2h - 2 * self.N[idx, i]
 
-                self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+                if synchronous:
+                    N_sync[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+                else:
+                    self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+                    if np.random.random() < t:
+                        self.flips += 1
+                        self.N[idx, i] = self.N[idx, i]
+        if synchronous:
+            self.N = N_sync
 
     def energy(self):
         b = self.p["B"]
@@ -184,19 +199,22 @@ class Hopfield:
     def converge(self):
         # Basically keep updating until the difference in Energy between timesteps is lower than 0.0005 (Based on Stimfple-Abele)
         # Passaleva uses a different kind of convergence i think (4)
-        energies = [self.energy()] # store all energies (not fastest but maybe nice for visualisations)
-        self.update()
-        energies.append(self.energy())
-        t = 0 # timesteps
-        while abs(abs(energies[-2]) - abs(energies[-1])) >= self.p['convergence_threshold']:
-            self.update()
-            energies.append(self.energy())
+        self.energies = [self.energy()] # store all energies (not fastest but maybe nice for visualisations)
+        t = 0  # timesteps
+        print(f"N at iteration{t}:", np.round(my_instance.N, 1))
+        self.update(synchronous=t < self.p["sync_rounds"])
+        t += 1
+        self.energies.append(self.energy())
+        while abs(abs(self.energies[-2]) - abs(self.energies[-1])) >= self.p['convergence_threshold']:
+            self.update(synchronous=t < self.p["sync_rounds"])
+            self.energies.append(self.energy())
+            print(f"N at iteration{t}:", np.round(my_instance.N, 1))
             t += 1
             self.p["T"] = self.p["T_decay"](self.p["T"])
         
 
         print("Network Converged after " + str(t) + " steps")
-        print("Energy = " + str(energies[-1]))
+        print("Energy = " + str(self.energies[-1]))
 
     def tracks(self, activation_threshold : list=None):
         if self.extracted_tracks:
@@ -296,6 +314,9 @@ def prepare_instance(even=True, num_modules=10, plot_events=False, num_tracks=3,
 
 def load_instance(file_name, plot_events=False):
     tracks = eg.read_tracks(file_name)
+    for t in tracks:
+        print([hit.y for hit in t.hits])
+        print()
     modules = eg.tracks_to_modules(tracks)
     if plot_events:
         eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
@@ -309,12 +330,13 @@ if __name__ == "__main__":
         "ALPHA": 1,
         "BETA": 10,
         "GAMMA": 10,
-        "narrowness": 100,
+        "narrowness": 200,
         "constant_factor": 1,
         #### UPDATE ###
-        "T": 1,
+        "T": 0.8,
         "B": 1,
         "T_decay": lambda t: max(0.00001, t * 0.8),
+        "sync_rounds": 0,
         #### THRESHOLD ###
         "maxActivation": True,
         "THRESHOLD": 0.2,
@@ -324,20 +346,25 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    # modules = load_instance("test.txt", plot_events=True)
-    modules = prepare_instance(num_modules=4, plot_events=True, num_tracks=5,
-                               save_to_file="test.txt")
+    modules = load_instance("test.txt", plot_events=True)
+    for m in modules:
+        print([hit.y for hit in m.hits()])
+    # modules = prepare_instance(num_modules=4, plot_events=True, num_tracks=5,
+    #                            save_to_file="test.txt")
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
-        # sns.heatmap(my_instance.W[i])
-        # plt.show()
+    #     sns.heatmap(my_instance.W[i])
+    #     plt.show()
     # for i in range(3):
     #     print(my_instance.N_info[:,:,i])
     my_instance.converge()
-    print(my_instance.N)
 
     print("Number of Track elements: " + str(len(my_instance.tracks())))
-    print(my_instance.extracted_track_states)
 
+    plt.plot(my_instance.energies)
+    plt.show()
 
+    print(np.round(my_instance.N, 1))
+
+    print(my_instance.flips)
     my_instance.plot_network_results(show_states=True)
