@@ -102,6 +102,8 @@ def plot_tracks_and_modules(tracks, modules, colors=None, title=None):
 def tracks_to_modules(tracks):
     modules = defaultdict(list)
     [[modules[hit.module_number].append(hit) for hit in track.hits] for track in tracks]
+    for k in modules.keys():
+        modules[k] = sorted(modules[k], key=lambda hit: hit.y)
     return sorted([em.module(key, set([hit.z for hit in modules[key]]),
                    0, len(modules[key]), modules[key]) for key in modules.keys()],
                   key=lambda module: module.module_number)

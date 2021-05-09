@@ -55,7 +55,7 @@ class Hopfield:
     def init_neurons(self, unit=True):
         self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
-            self.N[idx, nc:] = 1
+            self.N[idx, nc:] = 0
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
         for idx in range(self.modules_count - 1):
             m1 = self.m[idx]
@@ -121,7 +121,7 @@ class Hopfield:
         b = self.p["B"]
         t = self.p["T"]
         # I think here we need to look at the first neurons,
-        # then all the neurons in beween as they are dependent on two other layers of neurons
+        # then all the neurons in between as they are dependent on two other layers of neurons
         # then the last layer of the neurons as they only dep on one side
 
         N_sync = None
@@ -333,7 +333,7 @@ if __name__ == "__main__":
         "narrowness": 200,
         "constant_factor": 1,
         #### UPDATE ###
-        "T": 0.8,
+        "T": 10,
         "B": 1,
         "T_decay": lambda t: max(0.00001, t * 0.8),
         "sync_rounds": 0,
@@ -346,11 +346,11 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules = load_instance("test.txt", plot_events=True)
+    # modules = load_instance("test.txt", plot_events=True)
+    modules = prepare_instance(num_modules=3, plot_events=True, num_tracks=20,
+                               save_to_file="test.txt")
     for m in modules:
         print([hit.y for hit in m.hits()])
-    # modules = prepare_instance(num_modules=4, plot_events=True, num_tracks=5,
-    #                            save_to_file="test.txt")
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
     #     sns.heatmap(my_instance.W[i])
