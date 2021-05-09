@@ -340,7 +340,7 @@ def solve4 (self):
                         current_track = [] # Reset current track
                         current_track.append(h) # Add the hit as the initial hit of the track
 
-            else: # if hit h is not sufficiently close to the current track
+            else: # if hit h is not sufficiently close in angle to the current track
                 hitHhasBeenAdded = False
                 for i in range(NumberOfPreviousTracks):
                         if(i < len(tracks)):
