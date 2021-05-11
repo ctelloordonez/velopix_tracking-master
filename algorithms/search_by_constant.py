@@ -12,10 +12,10 @@ class SearchByConstant:
     def solve(self):
 
         '***********Parameters ***************'
-        NumberOfPreviousTracks = 200     # Parameter for number of previous tracks to check
-        XminY = 0.01 # accepted deviation between the x and y ratio values of the track and a hit h
-        YminZ = 0.01 # accepted deviation between the z and y ratio values of the track and a hit h
-        XminZ = 0.01 # accepted deviation between the x and z ratio values of the track and a hit h
+        NumberOfPreviousTracks = 40     # Parameter for number of previous tracks to check
+        XminY = 0.05 # accepted deviation between the x and y ratio values of the track and a hit h
+        YminZ = 0.05 # accepted deviation between the z and y ratio values of the track and a hit h
+        XminZ = 0.05 # accepted deviation between the x and z ratio values of the track and a hit h
         angleDifference = 0.005 # accepted deviation between the polar angle in x,y values of the current track and a hit h
         trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
         beginOrEnd = -1 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
@@ -57,9 +57,10 @@ class SearchByConstant:
                     
                     for i in range(NumberOfPreviousTracks):
                         if(i < len(tracks)):
+                           #if(checkEven(h) == checkEven(tracks[-1-i].hits[-1])): 
                             xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
                             if(xDir != 0 and yDir != 0 and zDir != 0):
-                               
+                            
                                 xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
                                 yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
                                 zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
@@ -379,10 +380,10 @@ class SearchByConstant:
     def solve5(self):
 
         '***********Parameters ***************'
-        NumberOfPreviousTracks = 100     # Parameter for number of previous tracks to check
-        XminY = 0.01 # accepted deviation between the x and y ratio values of the track and a hit h
-        YminZ = 0.01 # accepted deviation between the z and y ratio values of the track and a hit h
-        XminZ = 0.01 # accepted deviation between the x and z ratio values of the track and a hit h
+        NumberOfPreviousTracks = 4000     # Parameter for number of previous tracks to check
+        XminY = 0.02 # accepted deviation between the x and y ratio values of the track and a hit h
+        YminZ = 0.02 # accepted deviation between the z and y ratio values of the track and a hit h
+        XminZ = 0.02 # accepted deviation between the x and z ratio values of the track and a hit h
         angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
         trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
         beginOrEnd = -1 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
@@ -589,7 +590,16 @@ def calculateDirectionVector(hit1,hit2):
         xDirection = hit2.x - hit1.x
         yDirection = hit2.y - hit1.y
         zDirection = hit2.z - hit1.z
+    
+    if(xDirection == 0):
+        xDirection = hit1.x
+    elif(yDirection == 0):
+        yDirection = hit1.y
+    elif(zDirection ==0):
+        zDirection = hit1.z
+    
     return xDirection,yDirection,zDirection
+
 
 # returns sum of absolute difference between two direction vectors between 2 pairs of hits 
 def calculateDifferenceOfDirectionVector(hit1,hit2,hit3,hit4):
@@ -616,10 +626,18 @@ def removeTracks(tracks, minLength):
     
 def matchTracks(tracks,numberOfTracks,MonotoneDifference):
     for i in range(len(tracks)):
-        for j in range(numberOfTracks):
-             if(abs(calculateMonotoneApproximation(tracks[i].hits[0],tracks[i+1+j].hits[0]) - calculateMonotoneApproximation(tracks[i].hits[-1],tracks[i+1+j].hits[-1])) < MonotoneDifference ):
+        #for j in range(numberOfTracks):
+        j = 0
+        while j < numberOfTracks:
+            if(abs(calculateMonotoneApproximation(tracks[i].hits[0],tracks[i+1+j].hits[0]) - calculateMonotoneApproximation(tracks[i].hits[-1],tracks[i+1+j].hits[-1])) < MonotoneDifference ):
                 for z in range(len(tracks[i+1+j].hits)):
                     tracks[i].hits.append(tracks[i+1+j].hits[0]) # add it at the end
+                
+            else:
+                j = j+1
+
+
+
                                         
 
 # # function to look ahead at multiple hits, perhaps something for later
