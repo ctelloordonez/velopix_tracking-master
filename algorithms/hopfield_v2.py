@@ -255,6 +255,9 @@ class Hopfield:
             if self.p["maxActivation"]:
                 candidates = []
                 thresh = self.p["THRESHOLD"]
+                if(l2 != l1):
+                    pass
+                print(self.N[idx, : l2 * l1])
                 n1_transform = self.N[idx, : l2 * l1].reshape(l1, l2).T.copy()
                 n2_transform = self.N[idx + 1, : l3 * l2].reshape(l2, l3).T.copy()
                 for con in range(l2):  # loop over the connection hits in module 2
@@ -357,10 +360,10 @@ if __name__ == "__main__":
         "constant_factor": 0,
         #### UPDATE ###
         "T": 10,
-        "B": 0.1,
+        "B": 1,
         "B_decay": lambda t: max(0.1, t * 0.01),
         "T_decay": lambda t: max(0.00001, t * 0.8),
-        "sync_rounds": 0,
+        "sync_rounds": 1,
         #### THRESHOLD ###
         "maxActivation": True,
         "THRESHOLD": 0.2,
@@ -372,7 +375,7 @@ if __name__ == "__main__":
 
     modules = load_instance("test.txt", plot_events=False)
     modules = prepare_instance(
-        num_modules=4, plot_events=True, num_tracks=10, save_to_file="test.txt"
+        num_modules=4, plot_events=True, num_tracks=5, save_to_file="test.txt"
     )
     for m in modules:
         m.hits()
