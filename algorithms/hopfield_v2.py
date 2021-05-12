@@ -245,6 +245,27 @@ class Hopfield:
 
         print("Network Converged after " + str(t) + " steps")
         print("Energy = " + str(self.energies[-1]))
+        return self.N
+
+    def bootstrap_converge(self, bootstraps=50):
+        states_list = []
+        for i in range(bootstraps):
+
+            if self.p['random_neuron_init']:
+                # We only need to reinitialize if we randomly initialize
+                self.init_neurons()
+            
+            states = self.converge()
+
+            states_list.append(states)
+
+        stacked_states = np.stack(states_list, axis=2)
+
+        self.N = np.mean(stacked_states, axis=2)
+
+
+        
+
 
     def tracks(self, activation_threshold: list = None):
         if self.extracted_tracks:
@@ -369,7 +390,7 @@ if __name__ == "__main__":
         "BETA": 10,
         "GAMMA": 10,
         "narrowness": 200,
-        "constant_factor": 0,
+        "constant_factor": 0.2,
         #### UPDATE ###
         "T": 10,
         "B": 0.1,
@@ -387,9 +408,9 @@ if __name__ == "__main__":
     #######################################################
 
     modules = load_instance("test.txt", plot_events=False)
-    # modules = prepare_instance(
-    #     num_modules=8, plot_events=True, num_tracks=10, save_to_file="test.txt"
-    # )
+    modules = prepare_instance(
+        num_modules=12, plot_events=True, num_tracks=30, save_to_file="test.txt"
+    )
     for m in modules:
         m.hits()
         print([hit.y for hit in m.hits()])
@@ -411,6 +432,8 @@ if __name__ == "__main__":
 
     print(np.round(my_instance.N, 1))
 
-    print(my_instance.flips)
+    print(np.shape(my_instance.N))
+
+    my_instance.bootstrap_converge()
     my_instance.plot_network_results(show_states=True)
 
