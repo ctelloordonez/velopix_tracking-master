@@ -55,7 +55,10 @@ class Hopfield:
     def init_neurons(self, unit=True):
         # cosider hits in 2 modules
         # the neurons in N are ordered h1,1-h2,1; h1,1-h2,2; h1,1-h2,3 etc
-        self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
+        if self.p['random_neuron_init']:
+            self.N = np.random.uniform(size=(self.modules_count - 1, self.max_neurons))
+        else:
+            self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
             self.N[idx, nc:] = 0
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
@@ -224,7 +227,7 @@ class Hopfield:
             self.energy()
         ]  # store all energies (not fastest but maybe nice for visualisations)
         t = 0  # timesteps
-        print(f"N at iteration{t}:", np.round(my_instance.N, 1))
+        # print(f"N at iteration{t}:", np.round(my_instance.N, 1))
         self.update(synchronous=t < self.p["sync_rounds"])
         t += 1
         self.energies.append(self.energy())
@@ -234,7 +237,7 @@ class Hopfield:
         ):
             self.update(synchronous=t < self.p["sync_rounds"])
             self.energies.append(self.energy())
-            print(f"N at iteration{t}:", np.round(my_instance.N, 1))
+            # print(f"N at iteration{t}:", np.round(my_instance.N, 1))
             t += 1
             self.p["T"] = self.p["T_decay"](self.p["T"])
             # XXX: added b decay
@@ -359,6 +362,8 @@ def load_instance(file_name, plot_events=False):
 if __name__ == "__main__":
     #################### PARAMETERS #######################
     parameters = {
+        ### NEURONS ###
+        "random_neuron_init": True,
         ### WEIGHTS ###
         "ALPHA": 1,
         "BETA": 10,
@@ -395,6 +400,8 @@ if __name__ == "__main__":
     #     plt.show()
     # for i in range(3):
     #     print(my_instance.N_info[:,:,i])
+
+    print(np.round(my_instance.N, 2))
     my_instance.converge()
 
     print("Number of Track elements: " + str(len(my_instance.tracks())))
