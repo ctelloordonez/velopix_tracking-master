@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from math import pi, atan, sin, sqrt, tanh, cosh, exp
 import seaborn as sns
 from numpy.core.fromnumeric import shape
+import random
 
 ########################## LOCAL DEPENDENCIES #################################
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -139,46 +140,55 @@ class Hopfield:
         if synchronous:
             N_sync = self.N.copy()
 
+        update_list = []
         for idx in range(self.modules_count - 1):
             c1 = self.hit_counts[idx]
             c2 = self.hit_counts[idx + 1]
-
-            # loop over all neurons in the current layer we are looking at
             for i in range(c1 * c2):
-                update = 0
-                if idx > 0:
-                    update += self.N[idx - 1, :].T @ self.W[idx -1, :, i]
+                update_list.append((idx, i))
 
-                if idx < self.modules_count - 2:
-                    update += self.W[idx, i, :] @ self.N[idx + 1, :]
+        if self.p['randomized_updates']:
+            random.shuffle(update_list)
 
-                if 0 < idx < self.modules_count - 1:
-                    update /= 2
 
-                # left module and right module hit id -> current neuron connects hit lm_id with hit rn_id
-                lm_id = i // c2
-                rm_id = i % c2
+        for idx, i in update_list:
+            c1 = self.hit_counts[idx]
+            c2 = self.hit_counts[idx + 1]
 
-                # there can be a lot improved runtime wise with storing the sums and adj
-                # but too complicated for now
-                # all segments mapping to the hit in m1 -> the left module
-                m1h = np.sum(self.N[idx, lm_id * c2 : (lm_id + 1) * c2])
+            update = 0
+            if idx > 0:
+                update += self.N[idx - 1, :].T @ self.W[idx -1, :, i]
 
-                # all segments mapping to the hit in m2 - the right module
-                m2h = np.sum(self.N[idx, : c1 * c2].reshape(c2, c1)[rm_id, :]) #correct as well...
+            if idx < self.modules_count - 2:
+                update += self.W[idx, i, :] @ self.N[idx + 1, :]
 
-                # we need to subtract the neuron of the segment 2 times because we add it 2 times
-                pen = m1h + m2h - 2 * self.N[idx, i]
+            if 0 < idx < self.modules_count - 1:
+                update /= 2
 
-                if synchronous:
-                    N_sync[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
-                else:
-                    self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
-                    #if np.random.random() < t:
-                    #    self.flips += 1
-                    #    self.N[idx, i] = self.N[idx, i]
-                if idx == 2 and i > 3:
-                    pass
+            # left module and right module hit id -> current neuron connects hit lm_id with hit rn_id
+            lm_id = i // c2
+            rm_id = i % c2
+
+            # there can be a lot improved runtime wise with storing the sums and adj
+            # but too complicated for now
+            # all segments mapping to the hit in m1 -> the left module
+            m1h = np.sum(self.N[idx, lm_id * c2 : (lm_id + 1) * c2])
+
+            # all segments mapping to the hit in m2 - the right module
+            m2h = np.sum(self.N[idx, : c1 * c2].reshape(c2, c1)[rm_id, :]) #correct as well...
+
+            # we need to subtract the neuron of the segment 2 times because we add it 2 times
+            pen = m1h + m2h - 2 * self.N[idx, i]
+
+            if synchronous:
+                N_sync[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+            else:
+                self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+                #if np.random.random() < t:
+                #    self.flips += 1
+                #    self.N[idx, i] = self.N[idx, i]
+            if idx == 2 and i > 3:
+                pass
         if synchronous:
             self.N = N_sync
 
@@ -361,6 +371,7 @@ if __name__ == "__main__":
         "B_decay": lambda t: max(0.1, t * 0.01),
         "T_decay": lambda t: max(0.00001, t * 0.8),
         "sync_rounds": 0,
+        "randomized_updates": True,
         #### THRESHOLD ###
         "maxActivation": True,
         "THRESHOLD": 0.2,
@@ -371,9 +382,9 @@ if __name__ == "__main__":
     #######################################################
 
     modules = load_instance("test.txt", plot_events=False)
-    modules = prepare_instance(
-        num_modules=4, plot_events=True, num_tracks=10, save_to_file="test.txt"
-    )
+    # modules = prepare_instance(
+    #     num_modules=8, plot_events=True, num_tracks=10, save_to_file="test.txt"
+    # )
     for m in modules:
         m.hits()
         print([hit.y for hit in m.hits()])
