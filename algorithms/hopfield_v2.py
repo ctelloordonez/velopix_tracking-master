@@ -186,10 +186,17 @@ class Hopfield:
             if synchronous:
                 N_sync[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
             else:
-                self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
-                #if np.random.random() < t:
+                _update = 0.5 * (1 + tanh(update / t - b * pen / t))
+                if self.p['binary_states']:
+                    if random.random() < _update:
+                        self.N[idx, i] = 1
+                    else:
+                        self.N[idx, i] = 0
+                else:
+                    self.N[idx, i] = _update
+                # if np.random.random() < t:
                 #    self.flips += 1
-                #    self.N[idx, i] = self.N[idx, i]
+                #    self.N[idx, i] = 1 - self.N[idx, i]
             if idx == 2 and i > 3:
                 pass
         if synchronous:
@@ -242,6 +249,8 @@ class Hopfield:
             self.p["T"] = self.p["T_decay"](self.p["T"])
             # XXX: added b decay
             self.p["B"] = self.p["B_decay"](t)
+
+            # print("T: " + str(t) + " Flips : " + str(self.flips))
 
         print("Network Converged after " + str(t) + " steps")
         print("Energy = " + str(self.energies[-1]))
@@ -310,8 +319,8 @@ class Hopfield:
                     )
                     candidate_states.append(n1_transform[con, h1_idx])
                     candidate_states.append(n2_transform[h3_idx, con])
-                    # n1_transform[:, h1_idx] = 0  # set this hit to 0 so it's not chosen again
-                    # n2_transform[h3_idx, :] = 0
+                    n1_transform[:, h1_idx] = 0  # set this hit to 0 so it's not chosen again
+                    n2_transform[h3_idx, :] = 0
 
             global_candidates += candidates
             global_candidate_states += candidate_states
@@ -385,14 +394,15 @@ if __name__ == "__main__":
     parameters = {
         ### NEURONS ###
         "random_neuron_init": True,
+        "binary_states": False,
         ### WEIGHTS ###
         "ALPHA": 1,
         "BETA": 10,
         "GAMMA": 10,
         "narrowness": 200,
-        "constant_factor": 0.2,
+        "constant_factor": 0.9,
         #### UPDATE ###
-        "T": 10,
+        "T": 5,
         "B": 0.1,
         "B_decay": lambda t: max(0.1, t * 0.01),
         "T_decay": lambda t: max(0.00001, t * 0.8),
@@ -402,15 +412,15 @@ if __name__ == "__main__":
         "maxActivation": True,
         "THRESHOLD": 0.2,
         ##### CONVERGENCE ###
-        "convergence_threshold": 0.0005,
+        "convergence_threshold": 0.00005,
     }
     ###########
     #######################################################
 
     modules = load_instance("test.txt", plot_events=False)
-    modules = prepare_instance(
-        num_modules=12, plot_events=True, num_tracks=30, save_to_file="test.txt"
-    )
+    # modules = prepare_instance(
+    #     num_modules=12, plot_events=True, num_tracks=20, save_to_file="test.txt"
+    # )
     for m in modules:
         m.hits()
         print([hit.y for hit in m.hits()])
@@ -434,6 +444,7 @@ if __name__ == "__main__":
 
     print(np.shape(my_instance.N))
 
-    my_instance.bootstrap_converge()
+    my_instance.bootstrap_converge(bootstraps=50)
+    print(my_instance.flips)
     my_instance.plot_network_results(show_states=True)
 
