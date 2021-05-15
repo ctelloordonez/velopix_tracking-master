@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from math import pi, atan, sin, sqrt, tanh, cosh, exp
 import seaborn as sns
 from numpy.core.fromnumeric import shape
+import random
 
 ########################## LOCAL DEPENDENCIES #################################
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -54,7 +55,10 @@ class Hopfield:
     def init_neurons(self, unit=True):
         # cosider hits in 2 modules
         # the neurons in N are ordered h1,1-h2,1; h1,1-h2,2; h1,1-h2,3 etc
-        self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
+        if self.p["random_neuron_init"]:
+            self.N = np.random.uniform(size=(self.modules_count - 1, self.max_neurons))
+        else:
+            self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
             self.N[idx, nc:] = 0
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
@@ -89,10 +93,10 @@ class Hopfield:
         # loops neuron neuron weight matrices
         for w_idx in range(self.modules_count - 2):
             # loops hits of the module connecting the neuron layers
-            for con_idx in range(self.hit_counts[w_idx + 1]):   # m2
-                for i in range(self.hit_counts[w_idx]):         # m1
+            for con_idx in range(self.hit_counts[w_idx + 1]):  # m2
+                for i in range(self.hit_counts[w_idx]):  # m1
                     ln_idx = i * self.hit_counts[w_idx + 1] + con_idx  # left_neuron_idx
-                    for j in range(self.hit_counts[w_idx + 2]): # m3
+                    for j in range(self.hit_counts[w_idx + 2]):  # m3
                         rn_idx = con_idx * self.hit_counts[w_idx + 2] + j
 
                         # Constant term from the other group
@@ -139,46 +143,63 @@ class Hopfield:
         if synchronous:
             N_sync = self.N.copy()
 
+        update_list = []
         for idx in range(self.modules_count - 1):
             c1 = self.hit_counts[idx]
             c2 = self.hit_counts[idx + 1]
-
-            # loop over all neurons in the current layer we are looking at
             for i in range(c1 * c2):
-                update = 0
-                if idx > 0:
-                    update += self.N[idx - 1, :].T @ self.W[idx -1, :, i]
+                update_list.append((idx, i))
 
-                if idx < self.modules_count - 2:
-                    update += self.W[idx, i, :] @ self.N[idx + 1, :]
+        if self.p["randomized_updates"]:
+            random.shuffle(update_list)
 
-                if 0 < idx < self.modules_count - 1:
-                    update /= 2
+        for idx, i in update_list:
+            c1 = self.hit_counts[idx]
+            c2 = self.hit_counts[idx + 1]
 
-                # left module and right module hit id -> current neuron connects hit lm_id with hit rn_id
-                lm_id = i // c2
-                rm_id = i % c2
+            update = 0
+            if idx > 0:
+                update += self.N[idx - 1, :].T @ self.W[idx - 1, :, i]
 
-                # there can be a lot improved runtime wise with storing the sums and adj
-                # but too complicated for now
-                # all segments mapping to the hit in m1 -> the left module
-                m1h = np.sum(self.N[idx, lm_id * c2 : (lm_id + 1) * c2])
+            if idx < self.modules_count - 2:
+                update += self.W[idx, i, :] @ self.N[idx + 1, :]
 
-                # all segments mapping to the hit in m2 - the right module
-                m2h = np.sum(self.N[idx, : c1 * c2].reshape(c2, c1)[rm_id, :]) #correct as well...
+            if 0 < idx < self.modules_count - 1:
+                update /= 2
 
-                # we need to subtract the neuron of the segment 2 times because we add it 2 times
-                pen = m1h + m2h - 2 * self.N[idx, i]
+            # left module and right module hit id -> current neuron connects hit lm_id with hit rn_id
+            lm_id = i // c2
+            rm_id = i % c2
 
-                if synchronous:
-                    N_sync[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+            # there can be a lot improved runtime wise with storing the sums and adj
+            # but too complicated for now
+            # all segments mapping to the hit in m1 -> the left module
+            m1h = np.sum(self.N[idx, lm_id * c2 : (lm_id + 1) * c2])
+
+            # all segments mapping to the hit in m2 - the right module
+            m2h = np.sum(
+                self.N[idx, : c1 * c2].reshape(c2, c1)[rm_id, :]
+            )  # correct as well...
+
+            # we need to subtract the neuron of the segment 2 times because we add it 2 times
+            pen = m1h + m2h - 2 * self.N[idx, i]
+
+            if synchronous:
+                N_sync[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
+            else:
+                _update = 0.5 * (1 + tanh(update / t - b * pen / t))
+                if self.p["binary_states"]:
+                    if random.random() < _update:
+                        self.N[idx, i] = 1
+                    else:
+                        self.N[idx, i] = 0
                 else:
-                    self.N[idx, i] = 0.5 * (1 + tanh(update / t - b * pen / t))
-                    #if np.random.random() < t:
-                    #    self.flips += 1
-                    #    self.N[idx, i] = self.N[idx, i]
-                if idx == 2 and i > 3:
-                    pass
+                    self.N[idx, i] = _update
+                # if np.random.random() < t:
+                #    self.flips += 1
+                #    self.N[idx, i] = 1 - self.N[idx, i]
+            if idx == 2 and i > 3:
+                pass
         if synchronous:
             self.N = N_sync
 
@@ -214,7 +235,7 @@ class Hopfield:
             self.energy()
         ]  # store all energies (not fastest but maybe nice for visualisations)
         t = 0  # timesteps
-        print(f"N at iteration{t}:", np.round(my_instance.N, 1))
+        # print(f"N at iteration{t}:", np.round(my_instance.N, 1))
         self.update(synchronous=t < self.p["sync_rounds"])
         t += 1
         self.energies.append(self.energy())
@@ -224,14 +245,33 @@ class Hopfield:
         ):
             self.update(synchronous=t < self.p["sync_rounds"])
             self.energies.append(self.energy())
-            print(f"N at iteration{t}:", np.round(my_instance.N, 1))
+            # print(f"N at iteration{t}:", np.round(my_instance.N, 1))
             t += 1
             self.p["T"] = self.p["T_decay"](self.p["T"])
             # XXX: added b decay
             self.p["B"] = self.p["B_decay"](t)
 
+            # print("T: " + str(t) + " Flips : " + str(self.flips))
+
         print("Network Converged after " + str(t) + " steps")
         print("Energy = " + str(self.energies[-1]))
+        return self.N
+
+    def bootstrap_converge(self, bootstraps=50):
+        states_list = []
+        for i in range(bootstraps):
+
+            if self.p["random_neuron_init"]:
+                # We only need to reinitialize if we randomly initialize
+                self.init_neurons()
+
+            states = self.converge()
+
+            states_list.append(states)
+
+        stacked_states = np.stack(states_list, axis=2)
+
+        self.N = np.mean(stacked_states, axis=2)
 
     def tracks(self, activation_threshold: list = None):
         if self.extracted_tracks:
@@ -255,7 +295,7 @@ class Hopfield:
             if self.p["maxActivation"]:
                 candidates = []
                 thresh = self.p["THRESHOLD"]
-                if(l2 != l1):
+                if l2 != l1:
                     pass
                 print(self.N[idx, : l2 * l1])
                 n1_transform = self.N[idx, : l2 * l1].reshape(l1, l2).T.copy()
@@ -279,8 +319,10 @@ class Hopfield:
                     )
                     candidate_states.append(n1_transform[con, h1_idx])
                     candidate_states.append(n2_transform[h3_idx, con])
-                    # n1_transform[:, h1_idx] = 0  # set this hit to 0 so it's not chosen again
-                    # n2_transform[h3_idx, :] = 0
+                    n1_transform[
+                        :, h1_idx
+                    ] = 0  # set this hit to 0 so it's not chosen again
+                    n2_transform[h3_idx, :] = 0
 
             global_candidates += candidates
             global_candidate_states += candidate_states
@@ -352,31 +394,35 @@ def load_instance(file_name, plot_events=False):
 if __name__ == "__main__":
     #################### PARAMETERS #######################
     parameters = {
+        ### NEURONS ###
+        "random_neuron_init": True,
+        "binary_states": False,
         ### WEIGHTS ###
         "ALPHA": 1,
         "BETA": 10,
         "GAMMA": 10,
         "narrowness": 200,
-        "constant_factor": 0,
+        "constant_factor": 0.9,
         #### UPDATE ###
-        "T": 10,
-        "B": 1,
+        "T": 5,
+        "B": 0.1,
         "B_decay": lambda t: max(0.1, t * 0.01),
         "T_decay": lambda t: max(0.00001, t * 0.8),
-        "sync_rounds": 1,
+        "sync_rounds": 0,
+        "randomized_updates": True,
         #### THRESHOLD ###
         "maxActivation": True,
         "THRESHOLD": 0.2,
         ##### CONVERGENCE ###
-        "convergence_threshold": 0.0005,
+        "convergence_threshold": 0.00005,
     }
     ###########
     #######################################################
 
     modules = load_instance("test.txt", plot_events=False)
-    modules = prepare_instance(
-        num_modules=4, plot_events=True, num_tracks=5, save_to_file="test.txt"
-    )
+    # modules = prepare_instance(
+    #     num_modules=12, plot_events=True, num_tracks=20, save_to_file="test.txt"
+    # )
     for m in modules:
         m.hits()
         print([hit.y for hit in m.hits()])
@@ -387,6 +433,8 @@ if __name__ == "__main__":
     #     plt.show()
     # for i in range(3):
     #     print(my_instance.N_info[:,:,i])
+
+    print(np.round(my_instance.N, 2))
     my_instance.converge()
 
     print("Number of Track elements: " + str(len(my_instance.tracks())))
@@ -396,6 +444,9 @@ if __name__ == "__main__":
 
     print(np.round(my_instance.N, 1))
 
+    print(np.shape(my_instance.N))
+
+    my_instance.bootstrap_converge(bootstraps=50)
     print(my_instance.flips)
     my_instance.plot_network_results(show_states=True)
 
