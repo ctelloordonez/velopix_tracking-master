@@ -332,6 +332,23 @@ class Hopfield:
 
         return global_candidates
 
+    def show_all_tracks(self, colors=False):
+        # Creates a colormap from blue to red for small to large values respectively
+        c_map = Colormap(0, 1, 2 / 3.0, 0)
+        c = []
+        tracks = []
+        for idx in range(self.modules_count - 1):
+            m1 = self.m[idx]
+            m2 = self.m[idx + 1]
+
+            for i, hit1 in enumerate(m1.hits()):
+                for j, hit2 in enumerate(m2.hits()):
+                    if colors:
+                        n_idx = i * self.hit_counts[idx + 1] + j
+                        c.append(c_map.get_color_rgb(self.N[idx, n_idx]))
+                    tracks.append(em.track([hit1, hit2]))
+        eg.plot_tracks_and_modules(tracks, self.m, colors=c)
+
     def network_stats(self):
         #  well this could actually be the __repr__ function of our class
         pass
@@ -419,10 +436,10 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules = load_instance("test.txt", plot_events=False)
-    # modules = prepare_instance(
-    #     num_modules=12, plot_events=True, num_tracks=20, save_to_file="test.txt"
-    # )
+    # modules = load_instance("test.txt", plot_events=False)
+    modules = prepare_instance(
+        num_modules=3, plot_events=True, num_tracks=3, save_to_file="test.txt"
+    )
     for m in modules:
         m.hits()
         print([hit.y for hit in m.hits()])
@@ -449,4 +466,6 @@ if __name__ == "__main__":
     my_instance.bootstrap_converge(bootstraps=50)
     print(my_instance.flips)
     my_instance.plot_network_results(show_states=True)
+
+    my_instance.show_all_tracks(colors=True)
 
