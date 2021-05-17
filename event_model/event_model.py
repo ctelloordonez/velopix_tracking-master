@@ -128,7 +128,7 @@ class hit(object):
          str(self.y) + ", " + str(self.z) + (", " + str(self.t) if self.with_t else "") + "}"
 
   def __eq__(self, other):
-      return self.id == other.id
+      return self.id == other.id and self.x == other.x and self.y == other.y and self.z == other.z
 
   def __ne__(self, other):
       return not self.__eq__(other)

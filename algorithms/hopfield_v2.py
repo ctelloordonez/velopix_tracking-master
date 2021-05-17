@@ -1,6 +1,5 @@
 # Hopfield v2 -> all even mudules
 ############################### DEPENDENCIES ##################################
-import numpy as np
 import json
 import os
 import sys
@@ -30,7 +29,7 @@ from visual.color_map import Colormap
 
 
 class Hopfield:
-    def __init__(self, modules: list, parameters: dict):
+    def __init__(self, modules: list, parameters: dict, tracks: list = None):
         # set self variables, such as the maximum size
         self.p = parameters
         self.m = modules
@@ -46,19 +45,21 @@ class Hopfield:
         self.flips = 0
         self.max_neurons = max(self.neuron_count)
 
-        self.init_neurons()
+        self.init_neurons(tracks=tracks)
         self.init_weights()
         self.extracted_tracks = []
         self.extracted_track_states = []
         self.energies = []
 
-    def init_neurons(self, unit=True):
+    def init_neurons(self, unit=True, tracks: list = None):
         # cosider hits in 2 modules
         # the neurons in N are ordered h1,1-h2,1; h1,1-h2,2; h1,1-h2,3 etc
         if self.p["random_neuron_init"]:
             self.N = np.random.uniform(size=(self.modules_count - 1, self.max_neurons))
         else:
             self.N = np.ones(shape=(self.modules_count - 1, self.max_neurons))
+        if tracks:
+            self.N = np.zeros(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
             self.N[idx, nc:] = 0
         self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
@@ -69,6 +70,10 @@ class Hopfield:
             for i, hit1 in enumerate(m1.hits()):
                 for j, hit2 in enumerate(m2.hits()):
                     n_idx = i * self.hit_counts[idx + 1] + j
+                    if tracks:
+                        for t in tracks:
+                            if hit1 in t and hit2 in t:
+                                self.N[idx, n_idx] = 1
                     # maybe we can check these angles again
                     angle_xz = atan((hit2.x - hit1.x) / (hit2.z - hit1.z))
                     angle_yz = atan((hit2.y - hit1.y) / (hit2.z - hit1.z))
@@ -265,7 +270,7 @@ class Hopfield:
                 # We only need to reinitialize if we randomly initialize
                 self.init_neurons()
 
-            states = self.converge()
+            states = self.converge().copy()
 
             states_list.append(states)
 
@@ -274,8 +279,6 @@ class Hopfield:
         self.N = np.mean(stacked_states, axis=2)
 
     def tracks(self, activation_threshold: list = None):
-        if self.extracted_tracks:
-            return self.extracted_tracks
         # What the papers say:  The answer is given by the final set of active Neurons
         #                       All sets of Neurons connected together are considered as track candidates
         #
@@ -297,7 +300,6 @@ class Hopfield:
                 thresh = self.p["THRESHOLD"]
                 if l2 != l1:
                     pass
-                print(self.N[idx, : l2 * l1])
                 n1_transform = self.N[idx, : l2 * l1].reshape(l1, l2).T.copy()
                 n2_transform = self.N[idx + 1, : l3 * l2].reshape(l2, l3).T.copy()
                 for con in range(l2):  # loop over the connection hits in module 2
@@ -332,7 +334,7 @@ class Hopfield:
 
         return global_candidates
 
-    def show_all_tracks(self, colors=False):
+    def show_all_tracks(self, threshold=None, show_states=False):
         # Creates a colormap from blue to red for small to large values respectively
         c_map = Colormap(0, 1, 2 / 3.0, 0)
         c = []
@@ -343,8 +345,14 @@ class Hopfield:
 
             for i, hit1 in enumerate(m1.hits()):
                 for j, hit2 in enumerate(m2.hits()):
-                    if colors:
-                        n_idx = i * self.hit_counts[idx + 1] + j
+                    n_idx = i * self.hit_counts[idx + 1] + j
+                    if threshold:
+                        if self.N[idx, n_idx] >= threshold:
+                            tracks.append(em.track([hit1, hit2]))
+                            if show_states:
+                                c.append(c_map.get_color_rgb(self.N[idx, n_idx]))
+                        continue
+                    if show_states:
                         c.append(c_map.get_color_rgb(self.N[idx, n_idx]))
                     tracks.append(em.track([hit1, hit2]))
         eg.plot_tracks_and_modules(tracks, self.m, colors=c)
@@ -353,13 +361,19 @@ class Hopfield:
         #  well this could actually be the __repr__ function of our class
         pass
 
+    def print_neurons(self):
+        n = len(self.N)
+        for i in range(n):
+            m = int(sqrt(len(self.N[i])))
+            for j in range(m):
+                print(f"m{i+1}h{j+1}: {self.N[i, (j*m):((j+1)*m)]}")
+
     def plot_network_results(self, show_states=False):
         if show_states:
             # Creates a colormap from blue to red for small to large values respectively
             c_map = Colormap(0, 1, 2 / 3.0, 0)
             colors = []
             [colors.append(c_map.get_color_rgb(v)) for v in self.extracted_track_states]
-            print(c_map.get_color_rgb(0))
             eg.plot_tracks_and_modules(
                 self.extracted_tracks,
                 self.m,
@@ -394,18 +408,15 @@ def prepare_instance(
     modules = eg.tracks_to_modules(tracks)
     if plot_events:
         eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
-    return modules
+    return modules, tracks
 
 
 def load_instance(file_name, plot_events=False):
     tracks = eg.read_tracks(file_name)
-    for t in tracks:
-        print([hit.y for hit in t.hits])
-        print()
     modules = eg.tracks_to_modules(tracks)
     if plot_events:
         eg.plot_tracks_and_modules(tracks, modules, title="Generated Instance")
-    return modules
+    return modules, tracks
 
 
 if __name__ == "__main__":
@@ -422,27 +433,24 @@ if __name__ == "__main__":
         "constant_factor": 0.9,
         #### UPDATE ###
         "T": 5,
-        "B": 0.1,
-        "B_decay": lambda t: max(0.1, t * 0.01),
+        "B": 0.2,
+        "B_decay": lambda t: max(0.1, t * 0.04),
         "T_decay": lambda t: max(0.00001, t * 0.8),
         "sync_rounds": 0,
         "randomized_updates": True,
         #### THRESHOLD ###
         "maxActivation": True,
-        "THRESHOLD": 0.2,
+        "THRESHOLD": 0.3,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00005,
     }
     ###########
     #######################################################
 
-    # modules = load_instance("test.txt", plot_events=False)
-    modules = prepare_instance(
-        num_modules=3, plot_events=True, num_tracks=3, save_to_file="test.txt"
-    )
-    for m in modules:
-        m.hits()
-        print([hit.y for hit in m.hits()])
+    modules, tracks = load_instance("test.txt", plot_events=True)
+    # modules, tracks = prepare_instance(
+    #     num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
+    # )
 
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
@@ -451,21 +459,19 @@ if __name__ == "__main__":
     # for i in range(3):
     #     print(my_instance.N_info[:,:,i])
 
-    print(np.round(my_instance.N, 2))
+    # print(np.round(my_instance.N, 2))
     my_instance.converge()
-
-    print("Number of Track elements: " + str(len(my_instance.tracks())))
 
     # plt.plot(my_instance.energies)
     # plt.show()
 
-    print(np.round(my_instance.N, 1))
-
-    print(np.shape(my_instance.N))
-
     my_instance.bootstrap_converge(bootstraps=50)
-    print(my_instance.flips)
+    print("Converged:", my_instance.energies[-1])
+    my_instance.tracks()
     my_instance.plot_network_results(show_states=True)
 
-    my_instance.show_all_tracks(colors=True)
+    # true_instance = Hopfield(modules=modules, parameters=parameters, tracks=tracks)
+    # print("True:", true_instance.energy())
+    # true_instance.tracks()
+    # true_instance.plot_network_results()
 
