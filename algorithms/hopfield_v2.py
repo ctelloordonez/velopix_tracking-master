@@ -7,7 +7,7 @@ import numpy as np
 import inspect
 import os.path
 import matplotlib.pyplot as plt
-from math import pi, atan, sin, sqrt, tanh, cosh, exp
+from math import pi, atan, sin, sqrt, tanh, cosh, exp, ceil
 import seaborn as sns
 from numpy.core.fromnumeric import shape
 import random
@@ -33,6 +33,8 @@ class Hopfield:
         # set self variables, such as the maximum size
         self.p = parameters
         self.m = modules
+        self.start_T = self.p["T"]
+        self.start_B = self.p["B"]
         self.N = None
         self.N_info = None
         self.sync_rounds = parameters["sync_rounds"]
@@ -240,6 +242,8 @@ class Hopfield:
             self.energy()
         ]  # store all energies (not fastest but maybe nice for visualisations)
         t = 0  # timesteps
+        self.p["T"] = self.start_T
+        # self.p["B"] = self.start_B
         # print(f"N at iteration{t}:", np.round(my_instance.N, 1))
         self.update(synchronous=t < self.p["sync_rounds"])
         t += 1
@@ -273,6 +277,7 @@ class Hopfield:
             states = self.converge().copy()
 
             states_list.append(states)
+            print(f"Finished {i+1}/{bootstraps} iterations")
 
         stacked_states = np.stack(states_list, axis=2)
 
@@ -419,6 +424,11 @@ def load_instance(file_name, plot_events=False):
     return modules, tracks
 
 
+def mse(network, tracks):
+    true_network = Hopfield(modules=network.m, parameters=network.p, tracks=tracks)
+    return ((network.N - true_network.N)**2).mean(axis=None)
+
+
 if __name__ == "__main__":
     #################### PARAMETERS #######################
     parameters = {
@@ -435,7 +445,7 @@ if __name__ == "__main__":
         "T": 5,
         "B": 0.2,
         "B_decay": lambda t: max(0.1, t * 0.04),
-        "T_decay": lambda t: max(0.00001, t * 0.8),
+        "T_decay": lambda t: max(1e-8, t*0.01),
         "sync_rounds": 0,
         "randomized_updates": True,
         #### THRESHOLD ###
@@ -465,7 +475,7 @@ if __name__ == "__main__":
     # plt.plot(my_instance.energies)
     # plt.show()
 
-    my_instance.bootstrap_converge(bootstraps=50)
+    my_instance.bootstrap_converge(bootstraps=20)
     print("Converged:", my_instance.energies[-1])
     my_instance.tracks()
     my_instance.plot_network_results(show_states=True)
@@ -474,4 +484,18 @@ if __name__ == "__main__":
     # print("True:", true_instance.energy())
     # true_instance.tracks()
     # true_instance.plot_network_results()
+
+    # THIS CODE IS FOR COMPUTING THE MSES FOR DIFFERENT BOOTSTRAPS
+
+    # total_mse = []
+    # for i in range(50):
+    #     mses = []
+    #     for j in range(ceil(50/(i+1))):
+    #         instance = Hopfield(modules=modules, parameters=parameters)
+    #         instance.bootstrap_converge(bootstraps=i+1)
+    #         mses.append(mse(instance, tracks))
+    #     total_mse.append(sum(mses)/len(mses))
+    #
+    # plt.plot(total_mse)
+    # plt.show()
 
