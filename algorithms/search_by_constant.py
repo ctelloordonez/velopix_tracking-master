@@ -61,9 +61,9 @@ class SearchByConstant:
                             xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
                             if(xDir != 0 and yDir != 0 and zDir != 0):
                             
-                                xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
-                                yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
-                                zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
+                                xRelation = (h.x-tracks[-1-i].hits[0].x)/xDir # difference in x values between track point and h,divided by x-direction of track
+                                yRelation = (h.y-tracks[-1-i].hits[0].y)/yDir # difference in y values between track point and h,divided by y-direction of track
+                                zRelation = (h.z-tracks[-1-i].hits[0].z)/zDir # difference in z values between track point and h,divided by z-direction of track
 
                                 # for straight lines, xRelation, yRelation and zRelation should have a the same value
                                 if(abs(xRelation-yRelation) <=XminY and abs(yRelation-zRelation) <=YminZ and (xRelation-zRelation) <=XminZ ):
@@ -94,24 +94,24 @@ class SearchByConstant:
                     if(i < len(tracks)):
                         xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
                         if(xDir != 0 and yDir != 0 and zDir != 0):
-                                                        xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
-                                                        yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
-                                                        zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
+                            xRelation = (h.x-tracks[-1-i].hits[0].x)/xDir # difference in x values between track point and h,divided by x-direction of track
+                            yRelation = (h.y-tracks[-1-i].hits[0].y)/yDir # difference in y values between track point and h,divided by y-direction of track
+                            zRelation = (h.z-tracks[-1-i].hits[0].z)/zDir # difference in z values between track point and h,divided by z-direction of track
 
-                                                        # for straight lines, xRelation, yRelation and zRelation should have a the same value
-                                                        if(abs(xRelation-yRelation) <=XminY and abs(yRelation-zRelation) <=YminZ and (xRelation-zRelation) <=XminZ ):
-                                                            if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
-                                                                tracks[-1-i].hits.append(h) # add it at the end
-                                                                hitHhasBeenAdded = True
-                                                                break 
-                                                            if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
-                                                                tracks[-1-i].hits.insert(0,h) # add it at the beginning
-                                                                hitHhasBeenAdded = True
-                                                                break
-                                                            if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
-                                                                tracks[-1-i].hits.insert(1,h) # add it somewhere in between
-                                                                hitHhasBeenAdded = True
-                                                                break
+                            # for straight lines, xRelation, yRelation and zRelation should have a the same value
+                            if(abs(xRelation-yRelation) <=XminY and abs(yRelation-zRelation) <=YminZ and (xRelation-zRelation) <=XminZ ):
+                                if(h.module_number > tracks[-1-i].hits[-1].module_number ): # hit h is after the current end of the track
+                                    tracks[-1-i].hits.append(h) # add it at the end
+                                    hitHhasBeenAdded = True
+                                    break 
+                                if(h.module_number < tracks[-1-i].hits[0].module_number ): # hit h is before the current start of the track
+                                    tracks[-1-i].hits.insert(0,h) # add it at the beginning
+                                    hitHhasBeenAdded = True
+                                    break
+                                if(tracks[-1-i].hits[0].module_number < h.module_number < tracks[-1-i].hits[-1].module_number ): # hit h is in between the current track ends
+                                    tracks[-1-i].hits.insert(1,h) # add it somewhere in between
+                                    hitHhasBeenAdded = True
+                                    break
 
                 # When a hit has not been added to any track, use it as a starting point        
                 if(hitHhasBeenAdded == False):
@@ -279,10 +279,10 @@ class SearchByConstant:
     def solve4 (self):
 
             '***********Parameters ***************'
-            NumberOfPreviousTracks = 100  # Parameter for number of previous tracks to check
-            MonotoneDifference = 0.0003 # accepted deviation r over z ratio values of the track and a hit h
+            NumberOfPreviousTracks = 20  # Parameter for number of previous tracks to check
+            MonotoneDifference = 0.0015 # accepted deviation r over z ratio values of the track and a hit h
             angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
-            trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
+            trackGreaterThan = 2 # we only make the current_track a real track if its length is greater than this value
             beginOrEnd = -1 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
             '*************************************'
             
@@ -375,18 +375,22 @@ class SearchByConstant:
             if len(current_track) > trackGreaterThan:
                 tracks.append(em.track(current_track)) # append final track if longer than 1
 
+            # tracks = combineTracks(tracks,5)
+            # tracks = combineTracks(tracks,4)
+            # removeTracks(tracks,3)
             return tracks
+
       # method that checks previous tracks
     def solve5(self):
 
         '***********Parameters ***************'
-        NumberOfPreviousTracks = 4000     # Parameter for number of previous tracks to check
-        XminY = 0.02 # accepted deviation between the x and y ratio values of the track and a hit h
-        YminZ = 0.02 # accepted deviation between the z and y ratio values of the track and a hit h
-        XminZ = 0.02 # accepted deviation between the x and z ratio values of the track and a hit h
-        angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
+        NumberOfPreviousTracks = 40    # Parameter for number of previous tracks to check
+        XminY = 0.03 # accepted deviation between the x and y ratio values of the track and a hit h
+        YminZ = 0.03 # accepted deviation between the z and y ratio values of the track and a hit h
+        XminZ = 0.03 # accepted deviation between the x and z ratio values of the track and a hit h
+        angleDifference = 0.005 # accepted deviation between the polar angle in x,y values of the current track and a hit h
         trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
-        beginOrEnd = -1 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
+        beginOrEnd = 0 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
         '*************************************'
         
         tracks = [] # list of tracks found
@@ -432,9 +436,9 @@ class SearchByConstant:
                     xDir,yDir,zDir = calculateDirectionVector(current_track[0],current_track[-1]) # direction values of the track
                     if(xDir != 0 and yDir != 0 and zDir != 0):
                     
-                        xRelation = h.x-current_track[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
-                        yRelation = h.y-current_track[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
-                        zRelation = h.z-current_track[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
+                        xRelation = (h.x-current_track[0].x)/xDir # difference in x values between track point and h,divided by x-direction of track
+                        yRelation = (h.y-current_track[0].y)/yDir # difference in y values between track point and h,divided by y-direction of track
+                        zRelation = (h.z-current_track[0].z)/zDir # difference in z values between track point and h,divided by z-direction of track
 
                         # for straight lines, xRelation, yRelation and zRelation should have a the same value
                         if(abs(xRelation-yRelation) <=XminY and abs(yRelation-zRelation) <=YminZ and (xRelation-zRelation) <=XminZ ):
@@ -457,9 +461,9 @@ class SearchByConstant:
                                 xDir,yDir,zDir = calculateDirectionVector(tracks[-1-i].hits[0],tracks[-1-i].hits[-1]) # direction values of the track
                                 if(xDir != 0 and yDir != 0 and zDir != 0):
                                 
-                                    xRelation = h.x-tracks[-1-i].hits[0].x/xDir # difference in x values between track point and h,divided by x-direction of track
-                                    yRelation = h.y-tracks[-1-i].hits[0].y/yDir # difference in y values between track point and h,divided by y-direction of track
-                                    zRelation = h.z-tracks[-1-i].hits[0].z/zDir # difference in z values between track point and h,divided by z-direction of track
+                                    xRelation = (h.x-tracks[-1-i].hits[0].x)/xDir # difference in x values between track point and h,divided by x-direction of track
+                                    yRelation = (h.y-tracks[-1-i].hits[0].y)/yDir # difference in y values between track point and h,divided by y-direction of track
+                                    zRelation = (h.z-tracks[-1-i].hits[0].z)/zDir # difference in z values between track point and h,divided by z-direction of track
 
                                     # for straight lines, xRelation, yRelation and zRelation should have a the same value
                                     if(abs(xRelation-yRelation) <=XminY and abs(yRelation-zRelation) <=YminZ and (xRelation-zRelation) <=XminZ ):
@@ -519,8 +523,31 @@ class SearchByConstant:
 
         if len(current_track) > trackGreaterThan:
             tracks.append(em.track(current_track)) # append final track if longer than 1
+        
+        tracks = combineTracks(tracks,3)
+        tracks = combineTracks(tracks,2)
+        tracks = combineTracks(tracks,3)
+        tracks = combineTracks(tracks,2)
 
+        
+        
+
+        tracks = removeTracks(tracks,3)
         return tracks
+
+def combineTracks(tracks,lookAhead):
+    length = len(tracks)
+    for t in range(len(tracks)-1):
+        for k in range(1,lookAhead): # 5 works good
+            if(t+k < length):
+                MonotoneTrackT = calculateMonotoneApproximation(tracks[t].hits[0],tracks[t].hits[-1])
+                tempMonotone = calculateMonotoneApproximation(tracks[t+k].hits[0],tracks[t+k].hits[-1])
+                if(abs(MonotoneTrackT-tempMonotone) < 0.0011): #0.0011
+                    for z in range(len(tracks[t+k].hits)):
+                        tracks[t].hits.append(tracks[t+k].hits[z]) # add it at the end
+                    del tracks[t+k]
+                    length = length - 1
+    return tracks
 
 # sort the hits by polar angle
 def sort_by_phi(hits):
@@ -631,50 +658,32 @@ def matchTracks(tracks,numberOfTracks,MonotoneDifference):
         while j < numberOfTracks:
             if(abs(calculateMonotoneApproximation(tracks[i].hits[0],tracks[i+1+j].hits[0]) - calculateMonotoneApproximation(tracks[i].hits[-1],tracks[i+1+j].hits[-1])) < MonotoneDifference ):
                 for z in range(len(tracks[i+1+j].hits)):
-                    tracks[i].hits.append(tracks[i+1+j].hits[0]) # add it at the end
+                    tracks[i].hits.append(tracks[i+1+j].hits[z]) # add it at the end
                 
             else:
                 j = j+1
 
+# def reduceTracks(tracks):
+#     ThreeOrMore = []
+#     TwoTrack = []
+#     permissible = 0.001
+#     for i in range(len(tracks)):
+#         if(len(tracks[i].hits) == 2):
+#             TwoTrack.append(tracks[i])
+
+#     for j in range(len(TwoTrack)):
+#         min = 100000
+#         index  = -1
+#         for k in range(len(TwoTrack)):
+#             if (j != k):
+#                 temp = abs(calculateMonotoneApproximation(TwoTrack[j].hits[0],TwoTrack[k].hits[0]) - calculateMonotoneApproximation(TwoTrack[j].hits[-1],TwoTrack[k].hits[-1]))
+#                 if( temp < min ):
+#                     temp = min
+#                     index = k
+#         if(min < permissible ):
+            
 
 
-                                        
 
-# # function to look ahead at multiple hits, perhaps something for later
-# def compareHitsByDirectionVector(hits) :
-#     temp = np.array(len(hits)-1)
-#     xDir12, yDir12,zDir12 = calculateDirectionVector(hits[0],hits[1])
-#     xDir13, yDir13,zDir13 = calculateDirectionVector(hits[1],hits[2])
-    
-#     track1 = []
-#     track2 = []
-    
-#     track1.append(hits[0])
-#     track1.append(hits[1])
 
-#     track2.append(hits[0])
-#     track2.append(hits[2])
-
-#     for i in range (2,len(hits)):
-#         xRelation12 = hits[i].x-hits[0].x/xDir12
-#         yRelation12 = hits[i].y-hits[0].y/yDir12
-#         zRelation12 = hits[i].z-hits[0].z/zDir12
-
-#         if(abs(xRelation12-yRelation12)<=0.01 and abs(yRelation12-zRelation12) <=0.01 and (xRelation12-zRelation12) <=0.01 ):
-#             track1.append(hits[i])
-
-#     for i in range (3,len(hits)):
-
-#         xRelation13 = hits[i].x-hits[0].x/xDir13
-#         yRelation13 = hits[i].y-hits[0].y/yDir13
-#         zRelation13 = hits[i].z-hits[0].z/zDir13  
-
-#         if(abs(xRelation13-yRelation13)<=0.01 and abs(yRelation13-zRelation13) <=0.01 and (xRelation13-zRelation13) <=0.01 ):
-#                 track1.append(hits[i])   
-    
-#     if(len(track1) < len(track2)):
-#         if(len(track2) >= 3):
-#             tracks.append(em.track(track2))
-#     else:
-#         if(len(track1 >= 3)):
-#             tracks.append(em.track(track1))
+                                
