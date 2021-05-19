@@ -14,12 +14,15 @@ class TemplateMatching:
         numberOfTemplates = 900 # 900 does best on small data set
         templateArray = np.zeros((numberOfTemplates,52))
         '*****************************'
-        for h in self.hits:
-           polarAngle = math.atan2(h.y, h.x)
+        for i in range(len(self.hits)):
+           polarAngle = math.atan2(self.hits[i].y, self.hits[i].x)
            indexInArray = math.floor(((polarAngle+math.pi)/(2*math.pi/numberOfTemplates)))
            # were we want to store the hit is decided by 2pi/numberOfTemplates(i.e. how big do we want the angle difference to be) 
            # and then checking to see how often this angle difference fits into the polar angle + pi
-           templateArray[indexInArray][h.module_number-1] = h.id
+           if(indexInArray > numberOfTemplates-1):
+               indexInArray = numberOfTemplates-1
+
+           templateArray[indexInArray][self.hits[i].module_number-1] = i+1 #h.id
         
         tracks = checkTemplate(templateArray,numberOfTemplates,self.hits)
         # print(len(tracks))
@@ -37,15 +40,13 @@ def checkTemplate(templateArray,numberOfTemplates,hits):
         hitIDsEven = []
         hitIDsOdd = []
 
-        temporaryListEven = []
-        temporaryListOdd = []
-
         for k in range(52):
     
-            if(k %2 ==0):
+            if(k %2 ==0): # checking even
                 if(templateArray[t,k]!= 0 ):
                     countEven += 1
-                    hitIDsEven.append(templateArray[t,k])
+                    index = int(templateArray[t,k]-1)
+                    hitIDsEven.append(hits[index])
                 
                 elif(countEven > 0 and templateArray[t,k]== 0 and skipped == 0):
                     skipped +=1
@@ -57,14 +58,15 @@ def checkTemplate(templateArray,numberOfTemplates,hits):
                     else:
                         countEven = 0
                         skipped = 0
-                        newTrack=convertToTrack2(hitIDsEven,hits)
-                        tracks.append(newTrack)
+                        # newTrack=convertToTrack2(hitIDsEven,hits)
+                        tracks.append(em.track(hitIDsEven))
                         hitIDsEven = []
 
             else:
                 if(templateArray[t,k]!= 0):
                     countOdd += 1
-                    hitIDsOdd.append(templateArray[t,k])
+                    index = int(templateArray[t,k]-1)
+                    hitIDsOdd.append(hits[index])
     
                 elif(countOdd > 0 and templateArray[t,k]== 0 and skipped == 0):
                     skipped +=1
@@ -75,17 +77,18 @@ def checkTemplate(templateArray,numberOfTemplates,hits):
                     else:
                         countOdd = 0
                         skipped = 0
-                        newTrack = convertToTrack2(hitIDsOdd,hits)
-                        tracks.append(newTrack)
+                        # newTrack = convertToTrack2(hitIDsOdd,hits)
+                        tracks.append(em.track(hitIDsOdd))
                         hitIDsOdd = []
                    
     
         if(countEven > 2):
-            newTrack=convertToTrack2(hitIDsEven,hits)
-            tracks.append(newTrack)
+            # newTrack=convertToTrack2(hitIDsEven,hits)
+            tracks.append(em.track(hitIDsEven))
         if(countOdd > 2):
-            newTrack = convertToTrack2(hitIDsOdd,hits)
-            tracks.append(newTrack)
+            # newTrack = convertToTrack2(hitIDsOdd,hits)
+            tracks.append(em.track(hitIDsOdd))
+           
         
     return tracks
 
