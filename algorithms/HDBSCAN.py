@@ -36,18 +36,36 @@ def computeDistances(hits):
     distanceMatrix = np.empty((len(hits),len(hits)))
     for i in range(len(hits)):
         for j in range(i,len(hits)):
-            distanceMatrix[i][j] = distance(hits[i],hits[j])
+            distanceMatrix[i][j] = distance2(hits[i],hits[j])
             distanceMatrix[j][i] = distanceMatrix[i][j]
     return distanceMatrix
 
 def distance(hit1,hit2):
     if(hit1.module_number ==  hit2.module_number):
-        return 10000
-    elif((hit1.module_number % 2) == (hit2.module_number % 2)):
-        return (50000*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x))))/abs(hit1.module_number - hit2.module_number)
+        return 10
+    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
+        return ((abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x))))
     else:
-        return  10000
+        return  1
         # abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x))*abs(hit1.module_number - hit2.module_number)
+    
+def distance2(hit1,hit2):
+    if(hit1.module_number ==  hit2.module_number):
+        return 10
+    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
+        return (abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/math.sqrt(hit1.x**2 + hit2.x**2)
+    else:
+        return  1
+        # abs(math.ata
+
+def distance3(hit1,hit2):
+    if(hit1.module_number ==  hit2.module_number):
+        return 10
+    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
+        return (abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/math.sqrt(hit1.z**2 + hit2.z**2)
+    else:
+        return  1
+        # abs(math.ata
 
 def sort_by_phi(hits):
     phis = []
