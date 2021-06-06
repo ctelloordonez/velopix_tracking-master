@@ -33,7 +33,8 @@ def checkTemplate(templateArray,numberOfTemplates,hits):
     tracks = []
     for t in range(numberOfTemplates):
         
-        skipped = 0
+        skippedEven = 0
+        skippedOdd = 0
         countEven = 0
         countOdd = 0
 
@@ -48,16 +49,16 @@ def checkTemplate(templateArray,numberOfTemplates,hits):
                     index = int(templateArray[t,k]-1)
                     hitIDsEven.append(hits[index])
                 
-                elif(countEven > 0 and templateArray[t,k]== 0 and skipped == 0):
-                    skipped +=1
+                elif(countEven > 0 and templateArray[t,k]== 0 and skippedEven == 0):
+                    skippedEven +=1
                     
-                elif( templateArray[t,k]== 0 and skipped > 0):
+                elif( templateArray[t,k]== 0 and skippedEven > 0):
                     if(countEven<3):
                         countEven = 0
-                        skipped = 0
+                        skippedEven = 0
                     else:
                         countEven = 0
-                        skipped = 0
+                        skippedEven = 0
                         # newTrack=convertToTrack2(hitIDsEven,hits)
                         tracks.append(em.track(hitIDsEven))
                         hitIDsEven = []
@@ -68,15 +69,15 @@ def checkTemplate(templateArray,numberOfTemplates,hits):
                     index = int(templateArray[t,k]-1)
                     hitIDsOdd.append(hits[index])
     
-                elif(countOdd > 0 and templateArray[t,k]== 0 and skipped == 0):
-                    skipped +=1
-                elif(countOdd> 0 and templateArray[t,k] == 0 and skipped > 0):
+                elif(countOdd > 0 and templateArray[t,k]== 0 and skippedOdd == 0):
+                    skippedOdd +=1
+                elif(countOdd> 0 and templateArray[t,k] == 0 and skippedOdd > 0):
                     if(countOdd<3):
                         countOdd = 0
-                        skipped = 0
+                        skippedOdd = 0
                     else:
                         countOdd = 0
-                        skipped = 0
+                        skippedOdd = 0
                         # newTrack = convertToTrack2(hitIDsOdd,hits)
                         tracks.append(em.track(hitIDsOdd))
                         hitIDsOdd = []
@@ -116,3 +117,68 @@ def convertToTrack2(listOfHitIDs,hits):
                 currentTrack.append(h)
     track = em.track(currentTrack)
     return track
+
+# This function might be reworked into a template checking method
+def checkTemplate2(templateArray,numberOfTemplates,hits):
+    tracks = []
+    for t in range(numberOfTemplates):
+        
+        skippedEven = 0
+        skippedOdd = 0
+        countEven = 0
+        countOdd = 0
+
+        hitIDsEven = []
+        hitIDsOdd = []
+
+        for k in range(52):
+    
+            if(k %2 ==0): # checking even
+                if(templateArray[t,k]!= 0 ):
+                    countEven += 1
+                    index = int(templateArray[t,k]-1)
+                    hitIDsEven.append(hits[index])
+                
+                elif(countEven > 0 and templateArray[t,k]== 0 and skippedEven == 0):
+                    skippedEven +=1
+                    
+                elif( templateArray[t,k]== 0 and skippedEven > 0):
+                    if(countEven<3):
+                        countEven = 0
+                        skippedEven = 0
+                    else:
+                        countEven = 0
+                        skippedEven = 0
+                        # newTrack=convertToTrack2(hitIDsEven,hits)
+                        tracks.append(em.track(hitIDsEven))
+                        hitIDsEven = []
+
+            else:
+                if(templateArray[t,k]!= 0):
+                    countOdd += 1
+                    index = int(templateArray[t,k]-1)
+                    hitIDsOdd.append(hits[index])
+    
+                elif(countOdd > 0 and templateArray[t,k]== 0 and skippedOdd == 0):
+                    skippedOdd +=1
+                elif(countOdd> 0 and templateArray[t,k] == 0 and skippedOdd > 0):
+                    if(countOdd<3):
+                        countOdd = 0
+                        skippedOdd = 0
+                    else:
+                        countOdd = 0
+                        skippedOdd = 0
+                        # newTrack = convertToTrack2(hitIDsOdd,hits)
+                        tracks.append(em.track(hitIDsOdd))
+                        hitIDsOdd = []
+                   
+    
+        if(countEven > 2):
+            # newTrack=convertToTrack2(hitIDsEven,hits)
+            tracks.append(em.track(hitIDsEven))
+        if(countOdd > 2):
+            # newTrack = convertToTrack2(hitIDsOdd,hits)
+            tracks.append(em.track(hitIDsOdd))
+           
+        
+    return tracks

@@ -120,65 +120,18 @@ class ForwardSearch:
         tracks = []
         currentTrack = []
         for i in range(len(self.hits)-1):
-            currentTrack.append(self.hits[i])
-            currentTrack.append(self.hits[i+1])
-            tracks.append(em.track(currentTrack))
-            currentTrack = []
-            if(i <len(self.hits)-2):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+2])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-3):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+3])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-4):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+4])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-5):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+5])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-6):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+6])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-7):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+7])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-8):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+8])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-9):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+9])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-10):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+10])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-11):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+11])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
-            if(i <len(self.hits)-12):
-                currentTrack.append(self.hits[i])
-                currentTrack.append(self.hits[i+12])
-                tracks.append(em.track(currentTrack))
-                currentTrack = []
+            contributed = 0
+            for j in range(1,2): # 4 does well
+                if(i <len(self.hits)-j and contributed == 0):
+                    if(0<abs(self.hits[i].module_number -self.hits[i+j].module_number) <4 ):
+                        currentTrack.append(self.hits[i])
+                        currentTrack.append(self.hits[i+j])
+                        tracks.append(em.track(currentTrack))
+                        currentTrack = []
+                        contributed = 1
+
+            
+           
         return tracks
 
 def checkForTrack(i,hits,xDir,yDir,zDir,tracks,usedHits,XminY,YminZ,XminZ):

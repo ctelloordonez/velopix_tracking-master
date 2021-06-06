@@ -5,19 +5,19 @@ from event_model import event_model as em
 import sklearn
 
 from sklearn import cluster
+from sklearn.cluster import AffinityPropagation
 
-class HDBCluster:
+class AffinityPropagationWrapper:
 
     def __init__(self, event):
-        self.hits = sort_by_phi(event.hits) # sort hits by phi
-        # self.hits = sort_by_phi_projected(event.hits) # sort by projected phi into the plane
+        self.hits = event.hits 
     
     # method that checks previous tracks
     def solve(self):
 
         distance_matrix = computeDistances(self.hits)
-        clusterer = hdbscan.HDBSCAN(metric='precomputed',min_cluster_size=3)
-        clusterer.fit(distance_matrix)
+        clusterer = AffinityPropagation(affinity='precomputed', random_state=None) # affinity='precomputed'
+        clusterer.fit_predict(distance_matrix)
         clusterer.labels_
         clusterer.labels_.max()
 
@@ -39,7 +39,7 @@ def computeDistances(hits):
     distanceMatrix = np.empty((len(hits),len(hits)))
     for i in range(len(hits)):
         for j in range(i,len(hits)):
-            distanceMatrix[i][j] = distance6(hits[i],hits[j])
+            distanceMatrix[i][j] = distance3(hits[i],hits[j])
             distanceMatrix[j][i] = distanceMatrix[i][j]
     return distanceMatrix
 
@@ -69,32 +69,6 @@ def distance3(hit1,hit2):
     else:
         return  1
         # abs(math.ata
-
-def distance4(hit1,hit2):
-    if(hit1.module_number ==  hit2.module_number):
-        return 100000
-    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
-        return 10000*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))+ abs(hit1.module_number - hit2.module_number)
-    else:
-        return 50000*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))+ abs(hit1.module_number - hit2.module_number)
-
-def distance5(hit1,hit2):
-    if(math.atan2(hit2.y, hit2.x) - math.atan2(hit1.y, hit1.x)<0.01):
-
-        if((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number and abs(hit1.module_number - hit2.module_number) < 10):
-            return abs(hit1.module_number - hit2.module_number)
-        else:
-            return 500
-    else:
-        return 500
-
-def distance6(hit1,hit2):
-    if(hit1.module_number ==  hit2.module_number):
-        return 100000
-    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
-        return (abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(2*math.pi/20000) + abs(hit1.module_number - hit2.module_number)
-    else:
-        return 10000
 
 def sort_by_phi(hits):
     phis = []

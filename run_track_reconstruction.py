@@ -12,6 +12,7 @@ from algorithms.search_by_constant import SearchByConstant
 from algorithms.forward_search import ForwardSearch
 from algorithms.template_matching import TemplateMatching
 from algorithms.HDBSCAN import HDBCluster
+from algorithms.AffinityPropgation import AffinityPropagationWrapper
 
 solutions = {
   "search_by_phi": []
@@ -36,7 +37,7 @@ for (dirpath, dirnames, filenames) in os.walk("C:/Users/tjerk/Documents/GitHub/v
 
         # Append the solution and json_data
       
-        solutions["search_by_phi"].append(HDBCluster(event).solve())
+        solutions["search_by_phi"].append(TemplateMatching(event).solve())
         validation_data.append(json_data)
 
 # Validate the solutions
