@@ -49,6 +49,7 @@ class Hopfield:
 
         self.init_neurons(tracks=tracks)
         self.init_weights()
+        self.extracted_hits = set({})
         self.extracted_tracks = []
         self.extracted_track_states = []
         self.energies = []
@@ -315,15 +316,19 @@ class Hopfield:
                         or n2_transform[h3_idx, con] < thresh
                     ):
                         continue
+                    hit1 = self.m[idx].hits()[h1_idx]
+                    hit2 = self.m[idx + 1].hits()[con]
+                    hit3 = self.m[idx + 2].hits()[h3_idx]
                     candidates.append(
                         em.track(
                             [
-                                self.m[idx].hits()[h1_idx],
-                                self.m[idx + 1].hits()[con],
-                                self.m[idx + 2].hits()[h3_idx],
+                                hit1, hit2, hit3
                             ]
                         )
                     )
+                    self.extracted_hits.add(hit1)
+                    self.extracted_hits.add(hit2)
+                    self.extracted_hits.add(hit3)
                     candidate_states.append(n1_transform[con, h1_idx])
                     candidate_states.append(n2_transform[h3_idx, con])
                     n1_transform[
@@ -335,9 +340,20 @@ class Hopfield:
             global_candidate_states += candidate_states
 
         self.extracted_tracks = global_candidates
+        self.process_triplet_tracks()
         self.extracted_track_states = global_candidate_states
 
         return global_candidates
+
+    def process_triplet_tracks(self):
+        total_hits = sorted(self.extracted_hits, key=lambda hit: -hit.y)
+        total_hits = sorted(total_hits, key=lambda hit: hit.module_number)
+        while len(total_hits) != 0:
+            c_hit = total_hits[0]
+            while c_hit is not None:
+                exit()
+            exit()
+        return 0
 
     def show_all_tracks(self, threshold=None, show_states=False):
         # Creates a colormap from blue to red for small to large values respectively
@@ -361,6 +377,9 @@ class Hopfield:
                         c.append(c_map.get_color_rgb(self.N[idx, n_idx]))
                     tracks.append(em.track([hit1, hit2]))
         eg.plot_tracks_and_modules(tracks, self.m, colors=c)
+
+    def tracks_with_hit(self, hit):
+        return [track for track in self.extracted_tracks if hit in track]
 
     def network_stats(self):
         #  well this could actually be the __repr__ function of our class
@@ -457,10 +476,10 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules, tracks = load_instance("test.txt", plot_events=True)
-    # modules, tracks = prepare_instance(
-    #     num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
-    # )
+    # modules, tracks = load_instance("test.txt", plot_events=True)
+    modules, tracks = prepare_instance(
+        num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
+    )
 
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
