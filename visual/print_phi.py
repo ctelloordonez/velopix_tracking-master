@@ -126,11 +126,11 @@ def print_event_2d_2phi_r(event, tracks, x=2, phix=0, phiy=1, filename="double_p
         plt.show()
 
 def print_event_2d_phi_r(event, tracks, phix=0, phiy=1, filename="event_phi_r", save_to_file=False):
-  fig = plt.figure(figsize=(16*plotscale, 9*plotscale))
+  fig = plt.figure()
   ax = plt.axes()
   if len(tracks) > 0:
     count = 0
-    for t in [t for t in tracks if len(t.hits)>=3]:
+    for t in [t for t in tracks if len(t.hits)]:
       plt.plot(
         [hit_r(h[phix], h[phiy]) for h in t.hits],
         [hit_phi(h[phix], h[phiy]) for h in t.hits],
