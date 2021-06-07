@@ -49,7 +49,7 @@ class Hopfield:
 
         self.init_neurons(tracks=tracks)
         self.init_weights()
-        self.extracted_hits = set({})
+        self.extracted_hits = set()
         self.extracted_tracks = []
         self.extracted_track_states = []
         self.energies = []
@@ -348,12 +348,28 @@ class Hopfield:
     def process_triplet_tracks(self):
         total_hits = sorted(self.extracted_hits, key=lambda hit: -hit.y)
         total_hits = sorted(total_hits, key=lambda hit: hit.module_number)
+        print(len(total_hits))
+        total_tracks = []
         while len(total_hits) != 0:
             c_hit = total_hits[0]
+            c_track = [c_hit]
+            total_hits.remove(c_hit)
             while c_hit is not None:
-                exit()
-            exit()
-        return 0
+                candidate_tracks = self.tracks_with_hit(c_hit)
+                candidate_hits = set()
+                for track in candidate_tracks:
+                    index = track.hits.index(c_hit)
+                    if index < 2:
+                        candidate_hits.add(track.hits[index+1])
+                if len(candidate_hits) == 0:
+                    break
+                c_hit = list(candidate_hits)[0]  # Should really use the weight matrix...
+                if c_hit not in total_hits:
+                    break
+                c_track.append(c_hit)
+                total_hits.remove(c_hit)
+            total_tracks.append(em.track(c_track))
+        eg.plot_tracks_and_modules(total_tracks, self.m)
 
     def show_all_tracks(self, threshold=None, show_states=False):
         # Creates a colormap from blue to red for small to large values respectively
@@ -379,7 +395,7 @@ class Hopfield:
         eg.plot_tracks_and_modules(tracks, self.m, colors=c)
 
     def tracks_with_hit(self, hit):
-        return [track for track in self.extracted_tracks if hit in track]
+        return [track for track in self.extracted_tracks if hit in track.hits]
 
     def network_stats(self):
         #  well this could actually be the __repr__ function of our class
@@ -494,7 +510,7 @@ if __name__ == "__main__":
     # plt.plot(my_instance.energies)
     # plt.show()
 
-    my_instance.bootstrap_converge(bootstraps=20)
+    my_instance.bootstrap_converge(bootstraps=4)
     print("Converged:", my_instance.energies[-1])
     my_instance.tracks()
     my_instance.plot_network_results(show_states=True)
