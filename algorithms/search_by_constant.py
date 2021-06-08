@@ -384,7 +384,7 @@ class SearchByConstant:
     def solve5(self):
 
         '***********Parameters ***************'
-        NumberOfPreviousTracks = 40    # Parameter for number of previous tracks to check
+        NumberOfPreviousTracks = 10    # Parameter for number of previous tracks to check
         XminY = 0.02 # accepted deviation between the x and y ratio values of the track and a hit h
         YminZ = 0.02 # accepted deviation between the z and y ratio values of the track and a hit h
         XminZ = 0.02 # accepted deviation between the x and z ratio values of the track and a hit h

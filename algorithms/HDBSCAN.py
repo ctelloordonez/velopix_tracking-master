@@ -39,7 +39,7 @@ def computeDistances(hits):
     distanceMatrix = np.empty((len(hits),len(hits)))
     for i in range(len(hits)):
         for j in range(i,len(hits)):
-            distanceMatrix[i][j] = distance6(hits[i],hits[j])
+            distanceMatrix[i][j] = distance7(hits[i],hits[j])
             distanceMatrix[j][i] = distanceMatrix[i][j]
     return distanceMatrix
 
@@ -59,7 +59,7 @@ def distance2(hit1,hit2):
         return (abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/math.sqrt(hit1.x**2 + hit2.x**2)
     else:
         return  1
-        # abs(math.ata
+      
 
 def distance3(hit1,hit2):
     if(hit1.module_number ==  hit2.module_number):
@@ -68,7 +68,7 @@ def distance3(hit1,hit2):
         return (abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/math.sqrt(hit1.z**2 + hit2.z**2)
     else:
         return  1
-        # abs(math.ata
+ 
 
 def distance4(hit1,hit2):
     if(hit1.module_number ==  hit2.module_number):
@@ -95,6 +95,30 @@ def distance6(hit1,hit2):
         return (abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(2*math.pi/20000) + abs(hit1.module_number - hit2.module_number)
     else:
         return 10000
+
+def distance7(hit1,hit2):
+    if(hit1.module_number ==  hit2.module_number):
+        return 100000
+    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
+        if(hit1.module_number >  hit2.module_number):
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit1)-polarDistance(hit2)+1e-7)
+        else:
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit2)-polarDistance(hit1)+1e-7)
+    else:
+        return 10000
+
+def distance8(hit1,hit2):
+    if(hit1.module_number ==  hit2.module_number):
+        return 100000
+    elif((hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number):
+        if(hit1.module_number >  hit2.module_number):
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit1)-polarDistance(hit2)+1e-7)
+        else:
+            return  500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit2)-polarDistance(hit1)+1e-7)
+    else:
+        return 10000
+def polarDistance(hit1):
+    return math.sqrt(hit1.x**2 + hit1.y**2)
 
 def sort_by_phi(hits):
     phis = []

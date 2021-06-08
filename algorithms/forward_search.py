@@ -8,17 +8,19 @@ class ForwardSearch:
         self.hits = sort_by_phi(event.hits) # sort hits by phi
         # self.hits = sort_by_phi_projected(event.hits) # sort by projected phi into the plane
     
-    # method that checks previous tracks
+    # Main method, to go over a list of hits sorted by phi.
+    # It then uses the direction vector of two consequtive hits to see if there are hits around these two hits that fall on this vector.
+    # If so, these are added to the a track together with the 2 initial hits, and then these hits are flagged as being used.
     def solve(self):
 
-        '***********Parameters ***************'
+        '*********** Parameters **************'
         # NumberOfPreviousTracks = 200     # Parameter for number of previous tracks to check
         XminY = 0.04 # accepted deviation between the x and y ratio values of the track and a hit h
         YminZ = 0.04 # accepted deviation between the z and y ratio values of the track and a hit h
         XminZ = 0.04 # accepted deviation between the x and z ratio values of the track and a hit h
-        moduleDifferenceAllowed = 6
+        moduleDifferenceAllowed = 6 # How far apart can hits be to allow them to form a initial direction vector
         '*************************************'
-        usedHits = np.zeros(len(self.hits))
+        usedHits = np.zeros(len(self.hits)) # array to track used hits, if hit used in track set index of hit to 1.
         tracks = [] # list of tracks found
         
         
@@ -28,28 +30,14 @@ class ForwardSearch:
                     if(usedHits[i] == 0 and usedHits[i+1] == 0):
                         xDirection,yDirection,zDirection = calculateDirectionVector(self.hits[i],self.hits[i+1])
                         checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
-                        # checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
         
         tracks = combineTracks(tracks,5)
         tracks = combineTracks(tracks,5)
         tracks = combineTracks(tracks,3)
-        # tracks = combineTracks(tracks,2)
-
-        # tracks = combineTracks2(tracks,3, 0.0011)
-        # tracks = combineTracks2(tracks,2,0.0009)
-        # tracks = combineTracks2(tracks,1,0.0007)
-        # tracks = combineTracks2(tracks,3,0.0011)
-        # tracks = combineTracks2(tracks,2,0.0009)
-        # tracks = combineTracks2(tracks,1,0.0007)
-        
-        tracks = removeTracks(tracks,3)
-        # tracks = takeOutNonConsecutiveTracks(tracks)
-        # tracks = takeOutDuplicateHits(tracks)
-        # for i in tracks[1].hits:
-        #     print(i.id)
         
         return tracks
-
+    
+    # Similar to the first solve, now with the ability to use a hit if its neighbour has already been used.
     def solve2(self):
 
         '***********Parameters ***************'
@@ -58,11 +46,8 @@ class ForwardSearch:
         XminZ = 0.05 # accepted deviation between the x and z ratio values of the track and a hit h
         moduleDifferenceAllowed = 6
         '*************************************'
-        usedHits = np.zeros(len(self.hits))
+        usedHits = np.zeros(len(self.hits)) # array to track used hits, if hit used in track set index of hit to 1.
         tracks = [] # list of tracks found
-        # current_track = [] # list of hits representing the track currently under consideration
-        # current_track.append(self.hits[0]) # initialize by considering the first hit
-        # self.hits = self.hits[1:] # Take the first hit out of consideration for forming a track with itself
         skipped = 0 # variable to keep track of the number of modules skipped
         
         for i in range(len(self.hits)-1) : # loop over the hits in the event
@@ -90,10 +75,6 @@ class ForwardSearch:
                             Direction,yDirection,zDirection = calculateDirectionVector(self.hits[temp],self.hits[i+1])
                             # checkForTrack(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
                             tracks,Usedhits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
-            # if(i==len(self.hits)-2):
-            #     print(usedHits)
-
-        # tracks = takeOutNonConsecutiveTracks(tracks)
 
         # tracks = combineTracks(tracks,4)
         # tracks = combineTracks(tracks,3)
@@ -103,19 +84,12 @@ class ForwardSearch:
         tracks = combineTracks(tracks,4)
 
 
-        # tracks = combineTracks2(tracks,3)
-        # tracks = combineTracks2(tracks,2)
-        # tracks = combineTracks2(tracks,1)
-        # tracks = combineTracks2(tracks,3)
-        # tracks = combineTracks2(tracks,2)
-        # tracks = combineTracks2(tracks,1)
-        
-        # tracks = takeOutNonConsecutiveTracks(tracks)
-        # tracks= takeOutDuplicateHits(tracks)
+
         tracks = removeTracks(tracks,3)
-        # print(usedHits)
+     
         return tracks
 
+    # This is just a method that blindly adds tracks of 2 that have a similar angle. Just to see how many we can find.
     def solve3(self):
         tracks = []
         currentTrack = []
@@ -172,22 +146,6 @@ def checkForTrack(i,hits,xDir,yDir,zDir,tracks,usedHits,XminY,YminZ,XminZ):
             tempTrack.append(hits[indexList[t]])
             # usedHits[t] = 1
         tracks.append(em.track(tempTrack))
-
-        # skipped = False
-        # countEven = 0
-        # countOdd = 0
-   
-        # for k in range(len(followingModuleNumbers)):
-        #     if(followingModuleNumbers[k] == 1):
-        #         temp = k+2
-        #         while(followingModuleNumbers[temp] == 1 and count <3 and temp <= len(followingModuleNumbers)-3):
-        #             count = count + 1
-        #             temp= temp+2
-        #             if(skipped == False and followingModuleNumbers[temp] == 0 ):
-        #                 skipped = True
-        #                 count = count + 1
-        #             elif(count >= 3):
-        #                 tracks.append(em.track(tempTrack))
                 
 def combineTracks(tracks,lookAhead):
     length = len(tracks)
@@ -270,55 +228,6 @@ def combineTracks4(tracks,lookAhead):
             length = length -1
     return tracks
 
-def takeOutNonConsecutiveTracks(tracks):
-    
-    for t in tracks:
-        modulesHit = np.zeros(52)
-        for i in range(len(t.hits)):
-            modulesHit[t.hits[i].module_number-1] = 1
-        skipped = 0
-        countEven = 0
-        countOdd = 0
-        for k in range(len(modulesHit)):
-            if(countEven <  3 and countOdd < 3):
-                if(k %2 ==0):
-                    if(modulesHit[k]==1 and countEven < 3):
-                        countEven += 1
-                    elif(countEven == 3):
-                        break
-                    elif(countEven > 0 and modulesHit[k]==0 and skipped == 0):
-                        skipped +=1
-                    elif(countEven> 0 and modulesHit[k]==0 and skipped > 0):
-                        countEven = 0
-                        skipped = 0
-                else:
-                    if(modulesHit[k]==1 and countOdd < 3):
-                        countOdd += 1
-                    elif(countOdd == 3):
-                        break
-                    elif(countOdd > 0 and modulesHit[k]==0 and skipped == 0):
-                        skipped +=1
-                    elif(countOdd> 0 and modulesHit[k]==0 and skipped > 0):
-                        countOdd = 0
-                        skipped = 0
-        
-        if(countEven <  3 and countOdd < 3):
-            del t
-    return tracks
-
-def takeOutDuplicateHits(tracks):
-    for t in tracks:
-        for i in range(len(t.hits)-1):
-            length = len(t.hits)
-            for j in range(i,len(t.hits)):
-                if(j < length and t.hits[i].id == t.hits[j].id):
-                    del t.hits[j]
-                    length = length -1
-            
-    return tracks
-
-
-
 
 
 def sort_by_phi(hits):
@@ -337,18 +246,6 @@ def sort_by_phi_projected(hits):
     x = np.array(hits)[sorted_index]
     return x
 
-# def sort_by_direction(tracks):
-#     phis = []
-
-#     for t in tracks:
-#         if(tracks[t].hits[0].module_number > tracks[t].hits[-1].module_number):
-#             phis.append((tracks[t].hits[0].x-tracks[t].hits[-1].x)
-#         else:
-#             phis.append((tracks[t].hits[-1].x-tracks[t].hits[0].x)
-
-#     sorted_index = np.argsort(phis)
-#     x = np.array(tracks)[sorted_index]
-#     return x
 
 def checkForTrack2(i,hits,xDir,yDir,zDir,tracks,usedHits,XminY,YminZ,XminZ):
 
@@ -466,9 +363,56 @@ def removeTracks(tracks, minLength):
             i=i+1
     return tracks
     
+def takeOutNonConsecutiveTracks(tracks):
+    
+    for t in tracks:
+        modulesHit = np.zeros(52)
+        for i in range(len(t.hits)):
+            modulesHit[t.hits[i].module_number-1] = 1
+        skipped = 0
+        countEven = 0
+        countOdd = 0
+        for k in range(len(modulesHit)):
+            if(countEven <  3 and countOdd < 3):
+                if(k %2 ==0):
+                    if(modulesHit[k]==1 and countEven < 3):
+                        countEven += 1
+                    elif(countEven == 3):
+                        break
+                    elif(countEven > 0 and modulesHit[k]==0 and skipped == 0):
+                        skipped +=1
+                    elif(countEven> 0 and modulesHit[k]==0 and skipped > 0):
+                        countEven = 0
+                        skipped = 0
+                else:
+                    if(modulesHit[k]==1 and countOdd < 3):
+                        countOdd += 1
+                    elif(countOdd == 3):
+                        break
+                    elif(countOdd > 0 and modulesHit[k]==0 and skipped == 0):
+                        skipped +=1
+                    elif(countOdd> 0 and modulesHit[k]==0 and skipped > 0):
+                        countOdd = 0
+                        skipped = 0
+        
+        if(countEven <  3 and countOdd < 3):
+            del t
+    return tracks
+
+def takeOutDuplicateHits(tracks):
+    for t in tracks:
+        for i in range(len(t.hits)-1):
+            length = len(t.hits)
+            for j in range(i,len(t.hits)):
+                if(j < length and t.hits[i].id == t.hits[j].id):
+                    del t.hits[j]
+                    length = length -1
+            
+    return tracks
 def matchTracks(tracks,numberOfTracks,MonotoneDifference):
     for i in range(len(tracks)):
         for j in range(numberOfTracks):
              if(abs(calculateMonotoneApproximation(tracks[i].hits[0],tracks[i+1+j].hits[0]) - calculateMonotoneApproximation(tracks[i].hits[-1],tracks[i+1+j].hits[-1])) < MonotoneDifference ):
                 for z in range(len(tracks[i+1+j].hits)):
                     tracks[i].hits.append(tracks[i+1+j].hits[0]) # add it at the end
+
