@@ -20,12 +20,22 @@ project_root = os.path.dirname(file_path)
 if project_root not in sys.path:
     sys.path.append(project_root)
 from event_model import event_model as em
+from validator import validator_lite as vl
 import data_analysis.event_generator as eg
 from visual.color_map import Colormap
 
 ########################### GLOBAL VARIABLES ##################################
 
 ############################### BODY ##########################################
+
+
+### DESIRED INPUT for VALIDATOR###
+# what the validation function needs
+# json_data_all_events => [json_data_event_1, json_data_event_2, ..., json_data_event_n]
+# all_tracks => [all_tracks_event_1, all_tracks_event_2, ..., all_tracks_event_n]
+
+# all_tracks_event_j => a list of all tracks in event j. Tracks are track objects.
+###
 
 
 class Hopfield:
@@ -522,6 +532,54 @@ def load_instance(file_name, plot_events=False):
     return modules, tracks
 
 
+def load_event(file_name, plot_event=False):
+    f = open(file_name)
+    json_data_event = json.loads(f.read())
+
+    ev = em.event(json_data_event, read_tracks=True)
+
+    modules = ev.modules
+    tracks = ev.real_tracks
+
+    if plot_event:
+        eg.plot_tracks_and_modules(tracks, modules, title="Loaded Event")
+
+    modules_even = []
+    modules_odd = []
+
+    for i in range(len(modules)):
+        if i % 2 == 0:
+            modules_even.append(modules[i])
+        else:
+            modules_odd.append(modules[i])
+
+    return json_data_event, (modules_even, modules_odd)
+
+
+def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
+
+    json_data_all_events = []
+    all_tracks = []
+
+    for i in range(nr_events):
+        json_data_event, modules = load_event(file_name + str(i) + ".json")
+
+        even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
+        odd_hopfield = Hopfield(modules=modules[1], parameters=parameters)
+
+        even_hopfield.bootstrap_converge(bootstraps=4)
+        odd_hopfield.bootstrap_converge(bootstraps=4)
+
+        even_tracks = even_hopfield.tracks()
+        odd_tracks = odd_hopfield.tracks()
+        event_tracks = even_tracks + odd_tracks
+
+        json_data_all_events.append(json_data_event)
+        all_tracks.append(event_tracks)
+
+    vl.validate_print(json_data_all_events, all_tracks)
+
+
 def mse(network, tracks):
     true_network = Hopfield(modules=network.m, parameters=network.p, tracks=tracks)
     return ((network.N - true_network.N) ** 2).mean(axis=None)
@@ -555,10 +613,13 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules, tracks = load_instance("test_2.txt", plot_events=True)
-    # modules, tracks = prepare_instance(
-    #    num_modules=26, plot_events=True, num_tracks=50, save_to_file="test_2.txt"
-    # )
+    # modules, tracks = load_instance("test.txt", plot_events=True)
+    modules, tracks = prepare_instance(
+        num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
+    )
+
+    # evaluate_events("../events/small_dataset/velo_event_", parameters, nr_events=1)
+    # exit()
 
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
