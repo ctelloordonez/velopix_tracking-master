@@ -354,6 +354,68 @@ class Hopfield:
 
         return global_candidates
 
+    def full_tracks(self):
+        # this will deal with stange angles!!!
+        global_candidates = []
+        global_candidate_states = []
+        # under the assumption that we removed bifuration completely
+        # init this active tracks with all active neurons in layer 1! -> key is the right hit
+        tracks = {}
+
+        for idx in range(self.modules_count - 1):
+            tracks_2 = {}
+            l1 = self.hit_counts[idx]  # number of hits in module 1
+            l2 = self.hit_counts[idx + 1]
+
+            tr = self.p["THRESHOLD"]
+            for segment in range(l1 * l2):
+                if self.N[idx, segment] < tr:
+                    continue
+
+                r_hit = self.m[idx + 1].hits()[segment % l2]
+                l_hit = self.m[idx].hits()[segment // l2]
+
+                # self.N_info[idx, n_idx, 0] = abs(angle_xz)
+                # self.N_info[idx, n_idx, 1] = abs(angle_yz)
+                # self.N_info[idx, n_idx, 2] = norm_dist
+
+                if l_hit in tracks.keys():
+                    (track, states, angle) = tracks[l_hit]
+                    # XXX check if new segment should be appended to the current track
+                    # by some argument (eventually constant (which could also be stored, for last segment))
+                    # or by some breaking avg criterion, (or simply add it and post process!)
+
+                    track = track + [r_hit]
+                    states = states + [self.N[idx, segment]]
+                    angle = angle + [self.N_info[idx, segment, 2]]
+                    del tracks[l_hit]
+
+                    self.extracted_hits.add(r_hit)
+                    tracks_2[r_hit] = (track, states, angle)
+
+                else:
+                    track = [l_hit, r_hit]
+                    states = [self.N[idx, segment]]
+                    angle = [self.N_info[idx, segment, 2]]
+
+                    tracks_2[r_hit] = (track, states, angle)
+                    self.extracted_hits.add(r_hit)
+                    self.extracted_hits.add(l_hit)
+
+            for key, value in tracks.items():
+                (track, states, angle) = value
+                global_candidates = global_candidates + [track]
+                global_candidate_states = global_candidate_states + [states]
+
+            tracks = tracks_2
+
+        global_candidates = [em.track(hits) for hits in global_candidates]
+
+        self.extracted_tracks = global_candidates
+        self.extracted_track_states = global_candidate_states
+
+        return global_candidates
+
     def mark_bifurcation(self):
         w_N = self.N.copy()
         # self.N = np.zeros_like(self.N)
@@ -403,16 +465,6 @@ class Hopfield:
                     print(
                         f"neuron_layer {idx}: detected bifurc in left_hit {l_hit},  y: {self.m[idx].hits()[l_hit].y}"
                     )
-
-            # N1_pen = w_N[idx, : c1 * c2].reshape(c2, c1)
-            # N2_pen = w_N[idx + 1, : c2 * c3].reshape(c2, c3)
-
-            # bifurc_pen = (
-            #    np.sum(np.trace(N1_pen @ N1_pen.T))
-            #    + np.sum(np.trace(N2_pen @ N2_pen.T))
-            #    - np.sum(self.N[idx, :] * self.N[idx, :])
-            #    - np.sum(self.N[idx + 1, :] * self.N[idx + 1, :])
-            # )
 
         # converged, averaged neuron state
         # what do we want to do -> search all neurons wether there is bifurcation
@@ -637,8 +689,8 @@ if __name__ == "__main__":
     my_instance.bootstrap_converge(bootstraps=4)
     print("Converged:", my_instance.energies[-1])
     my_instance.mark_bifurcation()
-    my_instance.tracks()
-    my_instance.plot_network_results(show_states=True)
+    my_instance.full_tracks()
+    my_instance.plot_network_results(show_states=False)
 
     # true_instance = Hopfield(modules=modules, parameters=parameters, tracks=tracks)
     # print("True:", true_instance.energy())
