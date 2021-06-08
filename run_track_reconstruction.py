@@ -18,7 +18,7 @@ validation_data = []
 track_following = track_following()
 
 # Iterate all events
-for (dirpath, dirnames, filenames) in os.walk("events/minibias"):
+for (dirpath, dirnames, filenames) in os.walk("events/bsphiphi"):
     for i, filename in enumerate(filenames):
         # Get an event
         f = open(os.path.realpath(os.path.join(dirpath, filename)))
