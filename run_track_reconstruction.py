@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 from event_model import event_model as em
 from validator import validator_lite as vl
 
@@ -23,7 +24,8 @@ validation_data = []
 track_following = track_following()
 
 # Iterate all events
-for (dirpath, dirnames, filenames) in os.walk("C:/Users/tjerk/Documents/GitHub/velopix_tracking-master/events/small_dataset"):
+executionTime = 0.0
+for (dirpath, dirnames, filenames) in os.walk("C:/Users/tjerk/Documents/GitHub/velopix_tracking-master/events/minibias"):
     for i, filename in enumerate(filenames):
         # Get an event
         f = open(os.path.realpath(os.path.join(dirpath, filename)))
@@ -36,10 +38,14 @@ for (dirpath, dirnames, filenames) in os.walk("C:/Users/tjerk/Documents/GitHub/v
         print("Reconstructing event %i..." % (i))
 
         # Append the solution and json_data
-      
-        solutions["search_by_phi"].append(TemplateMatching(event).solve())
+        # solutions["search_by_phi"].append(TemplateMatching(event).solve())
+        startTime = time.time()
+        temp = ForwardSearch(event).solve2()
+        executionTime += (time.time() -startTime)
+        solutions["search_by_phi"].append(temp)
         validation_data.append(json_data)
 
+print('Execution time in seconds: ' + str(executionTime))
 # Validate the solutions
 for k, v in iter(sorted(solutions.items())):
     print("\nValidating tracks from %s:" % (k))
