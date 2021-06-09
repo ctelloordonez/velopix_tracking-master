@@ -3,6 +3,8 @@
 import json
 import os
 import sys
+import contextlib
+import io
 import numpy as np
 import inspect
 import os.path
@@ -11,6 +13,7 @@ from math import pi, atan, sin, sqrt, tanh, cosh, exp, ceil
 import seaborn as sns
 from numpy.core.fromnumeric import shape
 import random
+import time
 
 ########################## LOCAL DEPENDENCIES #################################
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -25,6 +28,15 @@ import data_analysis.event_generator as eg
 from visual.color_map import Colormap
 
 ########################### GLOBAL VARIABLES ##################################
+
+
+########################### CONTEXTS ##################################
+@contextlib.contextmanager
+def nostdout():
+    save_stdout = sys.stdout
+    sys.stdout = io.BytesIO()
+    yield
+    sys.stdout = save_stdout
 
 ############################### BODY ##########################################
 
@@ -273,11 +285,12 @@ class Hopfield:
 
             # print("T: " + str(t) + " Flips : " + str(self.flips))
 
-        print("Network Converged after " + str(t) + " steps")
-        print("Energy = " + str(self.energies[-1]))
+        # print("Network Converged after " + str(t) + " steps")
+        # print("Energy = " + str(self.energies[-1]))
         return self.N
 
     def bootstrap_converge(self, bootstraps=50):
+        start_time = time.time()
         states_list = []
         for i in range(bootstraps):
 
@@ -288,11 +301,14 @@ class Hopfield:
             states = self.converge().copy()
 
             states_list.append(states)
-            print(f"Finished {i+1}/{bootstraps} iterations")
+            # print(f"Finished {i+1}/{bootstraps} iterations")
 
         stacked_states = np.stack(states_list, axis=2)
 
         self.N = np.mean(stacked_states, axis=2)
+
+        end_time = time.time() - start_time
+        print("[HOPFIELD] converged after %i mins %.2f seconds" % (end_time // 60, end_time%60))
 
     def tracks(self):
         # What the papers say:  The answer is given by the final set of active Neurons
@@ -614,22 +630,39 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
     all_tracks = []
 
     for i in range(nr_events):
+        print("[INFO] Evaluate Event: %s" % file_name + str(i))
         json_data_event, modules = load_event(file_name + str(i) + ".json")
 
+        start_time = time.time()
         even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
         odd_hopfield = Hopfield(modules=modules[1], parameters=parameters)
+        end_time = time.time() - start_time
+        print("[INFO] Hopfield Networks initialized in %i mins %.2f seconds" % (end_time // 60, end_time%60))
 
-        even_hopfield.bootstrap_converge(bootstraps=4)
+        even_hopfield.bootstrap_converge(bootstraps=4)    
         odd_hopfield.bootstrap_converge(bootstraps=4)
 
-        even_tracks = even_hopfield.tracks()
-        odd_tracks = odd_hopfield.tracks()
+        start_time = time.time()
+        even_hopfield.mark_bifurcation()
+        odd_hopfield.mark_bifurcation()
+        even_tracks = even_hopfield.full_tracks()
+        odd_tracks = odd_hopfield.full_tracks()
         event_tracks = even_tracks + odd_tracks
+        end_time = time.time() - start_time
+        print("[INFO] tracks extracted in %i mins %.2f seconds" % (end_time // 60, end_time%60))
 
         json_data_all_events.append(json_data_event)
         all_tracks.append(event_tracks)
 
+        if plot_event:
+            even_hopfield.plot_network_results()
+            even_hopfield.plot_network_results()
+
+    start_time = time.time()
     vl.validate_print(json_data_all_events, all_tracks)
+    end_time = time.time() - start_time
+
+    print("[INFO] validation excecuted in %i mins %.2f seconds" % (end_time // 60, end_time%60))
 
 
 def mse(network, tracks):
@@ -670,7 +703,7 @@ if __name__ == "__main__":
         num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
     )
 
-    # evaluate_events("../events/small_dataset/velo_event_", parameters, nr_events=1)
+    # evaluate_events("../events/small_dataset/velo_event_", parameters, nr_events=1, plot_event=True)
     # exit()
 
     my_instance = Hopfield(modules=modules, parameters=parameters)
