@@ -429,6 +429,11 @@ class Hopfield:
 
             tracks = tracks_2
 
+        for key, value in tracks.items():
+            (track, states, angle) = value
+            global_candidates = global_candidates + [track]
+            global_candidate_states = global_candidate_states + [states]
+
         global_candidates = [em.track(hits) for hits in global_candidates]
 
         self.extracted_tracks = global_candidates
@@ -765,10 +770,10 @@ if __name__ == "__main__":
     my_instance.bootstrap_converge(bootstraps=4)
     print("Converged:", my_instance.energies[-1])
     my_instance.mark_bifurcation(zero=False, max_activation=True)
-    # my_instance.full_tracks()
-    # my_instance.plot_network_results(show_states=False)
-    my_instance.tracks()
-    my_instance.plot_network_results(show_states=True)
+    my_instance.full_tracks()
+    my_instance.plot_network_results(show_states=False)
+    # my_instance.tracks()
+    # my_instance.plot_network_results(show_states=True)
 
     # true_instance = Hopfield(modules=modules, parameters=parameters, tracks=tracks)
     # print("True:", true_instance.energy())
