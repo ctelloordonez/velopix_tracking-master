@@ -38,6 +38,7 @@ def nostdout():
     yield
     sys.stdout = save_stdout
 
+
 ############################### BODY ##########################################
 
 
@@ -308,7 +309,10 @@ class Hopfield:
         self.N = np.mean(stacked_states, axis=2)
 
         end_time = time.time() - start_time
-        print("[HOPFIELD] converged after %i mins %.2f seconds" % (end_time // 60, end_time%60))
+        print(
+            "[HOPFIELD] converged after %i mins %.2f seconds"
+            % (end_time // 60, end_time % 60)
+        )
 
     def tracks(self):
         # What the papers say:  The answer is given by the final set of active Neurons
@@ -432,9 +436,9 @@ class Hopfield:
 
         return global_candidates
 
-    def mark_bifurcation(self):
-        w_N = self.N.copy()
-        # self.N = np.zeros_like(self.N)
+    def mark_bifurcation(self, zero, max_activation):
+        if max_activation:
+            zero = False
         tr = self.p["THRESHOLD"]
         self.N[self.N <= tr] = 0
 
@@ -443,50 +447,79 @@ class Hopfield:
         for idx in range(self.modules_count - 1):
             # so basically we visit all neurons in one layer and check for neurons where the activation is bigger than tr
             # then we check all adjacent neurons for activation and check how many exceid the treshold
-
             # for each segment we look wether there is bifurcation on the left or right hit
 
             c1 = self.hit_counts[idx]
             c2 = self.hit_counts[idx + 1]
 
             for segment in range(c1 * c2):
-                if w_N[idx, segment] < tr:
+                if self.N[idx, segment] < tr:
                     continue
 
                 r_hit = segment % c2
                 l_hit = segment // c2
 
                 # left-right bifurction
-                activation_mask = w_N[idx, : c1 * c2].reshape(c1, c2)[:, r_hit] > tr
+                activation_mask = self.N[idx, : c1 * c2].reshape(c1, c2)[:, r_hit] > tr
                 if sum(activation_mask) > 1:  # we have bifuct into the right hit
-                    for i in range(c1):
+                    affected_neurons = []
+                    for i in range(c1):  # loop over all nerons affected by bifurc
                         if activation_mask[i]:
-                            # pass
                             # well here are the bifurcation things detected. here we would need to come up with a smart way to resolve it
-                            self.N[idx, (i * c2) + r_hit] = 0
+                            if zero:
+                                self.N[idx, (i * c2) + r_hit] = 0
+                            else:
+                                affected_neurons = affected_neurons + [(i * c2) + r_hit]
 
-                    print(
-                        f"""neuron_layer {idx}: detected bifurc in right_hit {r_hit}, y: {self.m[idx+1].hits()[r_hit].y}
-                        from y: {self.m[idx].hits()[l_hit].y}, activation: {w_N[idx, segment]}"""
-                    )
+                    if max_activation:
+                        # check to the left or max score
+                        max_activation = self.N[idx, affected_neurons[0]]
+                        max_id = 0
+                        for e in affected_neurons:
+                            if self.N[idx, e] > max_activation:
+                                max_id = e
+                                max_activation = self.N[idx, e]
+
+                            self.N[idx, e] = 0
+
+                        self.N[idx, max_id] = 1
+                        # simple rule -> when bifurc is detected on right side -> we look next active neurons going out
+                        # and promote the ones where the weight is high... (angle diff is low)
+                        # if next neuron layer exist!!!
+                        # also clean bifurc there if active
+
+                    # print(
+                    #    f"""neuron_layer {idx}: detected bifurc in right_hit {r_hit}, y: {self.m[idx+1].hits()[r_hit].y}
+                    #    from y: {self.m[idx].hits()[l_hit].y}, activation: {self.N[idx, segment]}"""
+                    # )
                     # i set all affected neurons to 1 and all others to 0 to see if it works
                     # deceide here which one survives (higher activation)
                 # right-left bifurcation
-                activation_mask = w_N[idx, : c1 * c2].reshape(c2, c1)[:, l_hit] > tr
+                activation_mask = self.N[idx, : c1 * c2].reshape(c1, c2)[l_hit, :] > tr
                 if sum(activation_mask) > 1:
+                    affected_neurons = []
                     for i in range(c2):
                         if activation_mask[i]:
-                            # pass
-                            self.N[idx, (l_hit * c2) + i] = 0
-                    print(
-                        f"neuron_layer {idx}: detected bifurc in left_hit {l_hit},  y: {self.m[idx].hits()[l_hit].y}"
-                    )
+                            if zero:
+                                self.N[idx, (l_hit * c2) + i] = 0
+                            else:
+                                affected_neurons = affected_neurons + [(l_hit * c2) + i]
+
+                    if max_activation:
+                        # check to the left or max score
+                        max_activation = self.N[idx, affected_neurons[0]]
+                        max_id = 0
+                        for e in affected_neurons:
+                            if self.N[idx, e] > max_activation:
+                                max_id = e
+                                max_activation = self.N[idx, e]
+                            self.N[idx, e] = 0
+                        self.N[idx, max_id] = 1
 
         # converged, averaged neuron state
         # what do we want to do -> search all neurons wether there is bifurcation
         # how to search this, by the indices... and then we store it as a combination of hit id_s, and which side of this element the bifurcation occurs
         # bifiurcation is stored as a list of hit ids, with
-        pass
 
     def process_triplet_tracks(self):
         total_hits = sorted(self.extracted_hits, key=lambda hit: -hit.y)
@@ -637,9 +670,12 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
         even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
         odd_hopfield = Hopfield(modules=modules[1], parameters=parameters)
         end_time = time.time() - start_time
-        print("[INFO] Hopfield Networks initialized in %i mins %.2f seconds" % (end_time // 60, end_time%60))
+        print(
+            "[INFO] Hopfield Networks initialized in %i mins %.2f seconds"
+            % (end_time // 60, end_time % 60)
+        )
 
-        even_hopfield.bootstrap_converge(bootstraps=4)    
+        even_hopfield.bootstrap_converge(bootstraps=4)
         odd_hopfield.bootstrap_converge(bootstraps=4)
 
         start_time = time.time()
@@ -649,7 +685,10 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
         odd_tracks = odd_hopfield.full_tracks()
         event_tracks = even_tracks + odd_tracks
         end_time = time.time() - start_time
-        print("[INFO] tracks extracted in %i mins %.2f seconds" % (end_time // 60, end_time%60))
+        print(
+            "[INFO] tracks extracted in %i mins %.2f seconds"
+            % (end_time // 60, end_time % 60)
+        )
 
         json_data_all_events.append(json_data_event)
         all_tracks.append(event_tracks)
@@ -662,7 +701,10 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
     vl.validate_print(json_data_all_events, all_tracks)
     end_time = time.time() - start_time
 
-    print("[INFO] validation excecuted in %i mins %.2f seconds" % (end_time // 60, end_time%60))
+    print(
+        "[INFO] validation excecuted in %i mins %.2f seconds"
+        % (end_time // 60, end_time % 60)
+    )
 
 
 def mse(network, tracks):
@@ -698,10 +740,10 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    # modules, tracks = load_instance("test.txt", plot_events=True)
-    modules, tracks = prepare_instance(
-        num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
-    )
+    modules, tracks = load_instance("test.txt", plot_events=True)
+    # modules, tracks = prepare_instance(
+    #    num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
+    # )
 
     # evaluate_events("../events/small_dataset/velo_event_", parameters, nr_events=1, plot_event=True)
     # exit()
@@ -714,6 +756,7 @@ if __name__ == "__main__":
     #     print(my_instance.N_info[:,:,i])
 
     # print(np.round(my_instance.N, 2))
+    np.random.seed(20)
     my_instance.converge()
 
     # plt.plot(my_instance.energies)
@@ -721,9 +764,11 @@ if __name__ == "__main__":
 
     my_instance.bootstrap_converge(bootstraps=4)
     print("Converged:", my_instance.energies[-1])
-    my_instance.mark_bifurcation()
-    my_instance.full_tracks()
-    my_instance.plot_network_results(show_states=False)
+    my_instance.mark_bifurcation(zero=False, max_activation=True)
+    # my_instance.full_tracks()
+    # my_instance.plot_network_results(show_states=False)
+    my_instance.tracks()
+    my_instance.plot_network_results(show_states=True)
 
     # true_instance = Hopfield(modules=modules, parameters=parameters, tracks=tracks)
     # print("True:", true_instance.energy())
