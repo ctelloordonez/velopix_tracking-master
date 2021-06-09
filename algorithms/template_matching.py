@@ -278,47 +278,89 @@ def checkTemplate3(templateArray,numberOfTemplates,hits):
 
 
 # Template matching with monotonicity check and multiple angle sections to check
-def checkTemplate4(templateArray,numberOfTemplates,hits):
-    flags = np.zeros(like=templateArray)
+def checkTemplate4(templateArray, numberOfTemplates, hits):
     tracks = []
     for t in range(numberOfTemplates):
-        
-        countEven = 0
 
-        
+        countEven = 0
         countOdd = 0
 
         hitIDsEven = []
         hitIDsOdd = []
 
         for k in range(52):
-    
-            if(k %2 ==0): # checking even
-                if(templateArray[t,k]!= 0):
-                    if(countEven <= 1):
-                        index = int(templateArray[t,k]-1) 
+
+            if (k % 2 == 0):  # checking even
+                if (templateArray[t, k] != 0):
+                    if (countEven <= 1):
+                        index = int(templateArray[t, k] - 1)
                         countEven += 1
                         hitIDsEven.append(hits[index])
                     else:
-                        xTemp = (hitIDsEven[0].x-hits[index].x)*(hitIDsEven[0].x-hitIDsEven[1].x) 
-                        yTemp = (hitIDsEven[0].y-hits[index].y)*(hitIDsEven[0].y-hitIDsEven[1].y) 
-                        if(xTemp > 0 and yTemp > 0 ):
+                        xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+                        yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+                        if (xTemp > 0 and yTemp > 0):
                             countEven += 1
-                            index = int(templateArray[t,k]-1)
+                            index = int(templateArray[t, k] - 1)
                             hitIDsEven.append(hits[index])
-                        elif(countEven>2):
+                        elif (countEven > 2):
                             countEven = 0
                             tracks.append(em.track(hitIDsEven))
                             hitIDsEven = []
                         else:
                             countEven = 1
                             hitIDsEven = []
-                            index = int(templateArray[t,k]-1)
+                            index = int(templateArray[t, k] - 1)
                             hitIDsEven.append(hits[index])
 
-            
-                elif( templateArray[t,k]== 0 and countEven > 0):
-                    if(countEven<3):
+                elif (t < numberOfTemplates - 1 and templateArray[
+                    t + 1, k] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    if (countEven <= 1):
+                        index = int(templateArray[t + 1, k] - 1)
+                        countEven += 1
+                        hitIDsEven.append(hits[index])
+                    else:
+                        xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+                        yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+                        if (xTemp > 0 and yTemp > 0):
+                            countEven += 1
+                            index = int(templateArray[t + 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+                        elif (countEven > 2):
+                            countEven = 0
+                            tracks.append(em.track(hitIDsEven))
+                            hitIDsEven = []
+                        else:
+                            countEven = 1
+                            hitIDsEven = []
+                            index = int(templateArray[t + 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+
+                elif (t > 0 and templateArray[
+                    t - 1, k] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    if (countEven <= 1):
+                        index = int(templateArray[t - 1, k] - 1)
+                        countEven += 1
+                        hitIDsEven.append(hits[index])
+                    else:
+                        xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+                        yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+                        if (xTemp > 0 and yTemp > 0):
+                            countEven += 1
+                            index = int(templateArray[t - 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+                        elif (countEven > 2):
+                            countEven = 0
+                            tracks.append(em.track(hitIDsEven))
+                            hitIDsEven = []
+                        else:
+                            countEven = 1
+                            hitIDsEven = []
+                            index = int(templateArray[t - 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+
+                elif (templateArray[t, k] == 0 and countEven > 0):
+                    if (countEven < 3):
                         countEven = 0
                         hitIDsEven = []
                     else:
@@ -327,35 +369,81 @@ def checkTemplate4(templateArray,numberOfTemplates,hits):
                         hitIDsEven = []
                 else:
                     hitIDsEven = []
-                
+
 
 
             else:
-                if(templateArray[t,k]!= 0):
-                    if(countOdd <= 1):
+                if (templateArray[t, k] != 0):
+                    if (countOdd <= 1):
                         countOdd += 1
-                        index = int(templateArray[t,k]-1)
+                        index = int(templateArray[t, k] - 1)
                         hitIDsOdd.append(hits[index])
                     else:
-                        xTemp = (hitIDsOdd[0].x-hits[index].x)*(hitIDsOdd[0].x-hitIDsOdd[1].x) 
-                        yTemp = (hitIDsOdd[0].y-hits[index].y)*(hitIDsOdd[0].y-hitIDsOdd[1].y) 
-                        if(xTemp > 0 and yTemp > 0 ):
+                        xTemp = (hitIDsOdd[0].x - hits[index].x) * (hitIDsOdd[0].x - hitIDsOdd[1].x)
+                        yTemp = (hitIDsOdd[0].y - hits[index].y) * (hitIDsOdd[0].y - hitIDsOdd[1].y)
+                        if (xTemp > 0 and yTemp > 0):
                             countOdd += 1
-                            index = int(templateArray[t,k]-1)
+                            index = int(templateArray[t, k] - 1)
                             hitIDsOdd.append(hits[index])
-                        elif(countOdd>2):
+                        elif (countOdd > 2):
                             countOdd = 0
                             tracks.append(em.track(hitIDsEven))
                             hitIDsOdd = []
                         else:
                             countOdd = 1
                             hitIDsOdd = []
-                            index = int(templateArray[t,k]-1)
+                            index = int(templateArray[t, k] - 1)
                             hitIDsOdd.append(hits[index])
-    
-                
-                elif(countOdd> 0 and templateArray[t,k] == 0 ):
-                    if(countOdd<3):
+
+                elif (t < numberOfTemplates - 1 and templateArray[
+                    t + 1, k] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    if (countEven <= 1):
+                        index = int(templateArray[t + 1, k] - 1)
+                        countEven += 1
+                        hitIDsEven.append(hits[index])
+                    else:
+                        xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+                        yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+                        if (xTemp > 0 and yTemp > 0):
+                            countEven += 1
+                            index = int(templateArray[t + 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+                        elif (countEven > 2):
+                            countEven = 0
+                            tracks.append(em.track(hitIDsEven))
+                            hitIDsEven = []
+                        else:
+                            countEven = 1
+                            hitIDsEven = []
+                            index = int(templateArray[t + 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+
+                elif (t > 0 and templateArray[
+                    t - 1, k] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    if (countEven <= 1):
+                        index = int(templateArray[t - 1, k] - 1)
+                        countEven += 1
+                        hitIDsEven.append(hits[index])
+                    else:
+                        xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+                        yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+                        if (xTemp > 0 and yTemp > 0):
+                            countEven += 1
+                            index = int(templateArray[t - 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+                        elif (countEven > 2):
+                            countEven = 0
+                            tracks.append(em.track(hitIDsEven))
+                            hitIDsEven = []
+                        else:
+                            countEven = 1
+                            hitIDsEven = []
+                            index = int(templateArray[t - 1, k] - 1)
+                            hitIDsEven.append(hits[index])
+
+
+                elif (countOdd > 0 and templateArray[t, k] == 0):
+                    if (countOdd < 3):
                         countOdd = 0
                         hitIDsOdd = []
                     else:
@@ -364,13 +452,12 @@ def checkTemplate4(templateArray,numberOfTemplates,hits):
                         hitIDsOdd = []
                 else:
                     hitIDsOdd = []
-    
-        if(countEven > 2):
+
+        if (countEven > 2):
             # newTrack=convertToTrack2(hitIDsEven,hits)
             tracks.append(em.track(hitIDsEven))
-        if(countOdd > 2):
+        if (countOdd > 2):
             # newTrack = convertToTrack2(hitIDsOdd,hits)
             tracks.append(em.track(hitIDsOdd))
-           
-        
+
     return tracks
