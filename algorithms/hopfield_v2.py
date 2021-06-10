@@ -378,6 +378,7 @@ class Hopfield:
         # this will deal with stange angles!!!
         global_candidates = []
         global_candidate_states = []
+        global_candidate_info = []
         # under the assumption that we removed bifuration completely
         # init this active tracks with all active neurons in layer 1! -> key is the right hit
         tracks = {}
@@ -395,51 +396,72 @@ class Hopfield:
                 r_hit = self.m[idx + 1].hits()[segment % l2]
                 l_hit = self.m[idx].hits()[segment // l2]
 
-                # self.N_info[idx, n_idx, 0] = abs(angle_xz)
-                # self.N_info[idx, n_idx, 1] = abs(angle_yz)
-                # self.N_info[idx, n_idx, 2] = norm_dist
-
                 if l_hit in tracks.keys():
                     (track, states, angle) = tracks[l_hit]
-                    # XXX check if new segment should be appended to the current track
-                    # by some argument (eventually constant (which could also be stored, for last segment))
-                    # or by some breaking avg criterion, (or simply add it and post process!)
 
                     track = track + [r_hit]
                     states = states + [self.N[idx, segment]]
-                    angle = angle + [self.N_info[idx, segment, 2]]
+                    info = angle + [self.N_info[idx, segment, :]]
                     del tracks[l_hit]
 
                     self.extracted_hits.add(r_hit)
-                    tracks_2[r_hit] = (track, states, angle)
+                    tracks_2[r_hit] = (track, states, info)
 
                 else:
                     track = [l_hit, r_hit]
                     states = [self.N[idx, segment]]
-                    angle = [self.N_info[idx, segment, 2]]
+                    info = [self.N_info[idx, segment, :]]
 
-                    tracks_2[r_hit] = (track, states, angle)
+                    tracks_2[r_hit] = (track, states, info)
                     self.extracted_hits.add(r_hit)
                     self.extracted_hits.add(l_hit)
 
-            for key, value in tracks.items():
-                (track, states, angle) = value
+            for _, value in tracks.items():
+                (track, states, info) = value
                 global_candidates = global_candidates + [track]
                 global_candidate_states = global_candidate_states + [states]
-
+                global_candidate_info = global_candidate_info + [info]
             tracks = tracks_2
 
-        for key, value in tracks.items():
-            (track, states, angle) = value
+        for _, value in tracks.items():
+            (track, states, info) = value
             global_candidates = global_candidates + [track]
             global_candidate_states = global_candidate_states + [states]
+            global_candidate_info = global_candidate_info + [info]
+
+        # here comes the funtion of 'pruning...' maybe i need to store more info for doing that!!!
+        global_candidates = self.prune_tracks(global_candidates, global_candidate_info)
 
         global_candidates = [em.track(hits) for hits in global_candidates]
-
         self.extracted_tracks = global_candidates
         self.extracted_track_states = global_candidate_states
 
         return global_candidates
+
+    # tr 0.1 seems decent for sum of info differences...
+    # we could look more carully into a criterion for this on big instances but here is fine...
+    def prune_tracks(self, tracks, track_infos, tr=0.01):
+        out_tracks = []
+        for track, info in zip(tracks, track_infos):
+            num_hits = len(track)
+            if num_hits < 3:  # sorting out the tracks that are not relevant
+                continue
+            # only if len> 6 need to think about splitting!!!
+            cand = [track[0], track[1]]
+            cand_info = info[0]
+            for idx in range(1, num_hits - 1):
+                # print(abs(sum(cand_info - info[idx])))
+                if abs(sum(cand_info - info[idx])) < tr:
+                    cand = cand + [track[idx + 1]]
+                else:
+                    if len(cand) > 2:
+                        out_tracks = out_tracks + [cand]
+                    cand = [track[idx], track[idx + 1]]
+                cand_info = info[idx]
+
+            if len(cand) > 2:
+                out_tracks = out_tracks + [cand]
+        return out_tracks
 
     def mark_bifurcation(self, zero, max_activation):
         if max_activation:
@@ -684,8 +706,8 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
         odd_hopfield.bootstrap_converge(bootstraps=4)
 
         start_time = time.time()
-        even_hopfield.mark_bifurcation()
-        odd_hopfield.mark_bifurcation()
+        even_hopfield.mark_bifurcation(zero=False, max_activation=True)
+        odd_hopfield.mark_bifurcation(zero=False, max_activation=True)
         even_tracks = even_hopfield.full_tracks()
         odd_tracks = odd_hopfield.full_tracks()
         event_tracks = even_tracks + odd_tracks
@@ -706,6 +728,7 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
     vl.validate_print(json_data_all_events, all_tracks)
     end_time = time.time() - start_time
 
+# we could check how many tracks acutally cross the detector sides i guess to identify where some clones come from...
     print(
         "[INFO] validation excecuted in %i mins %.2f seconds"
         % (end_time // 60, end_time % 60)
@@ -746,12 +769,16 @@ if __name__ == "__main__":
     #######################################################
 
     modules, tracks = load_instance("test.txt", plot_events=True)
-    # modules, tracks = prepare_instance(
-    #    num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
-    # )
+    modules, tracks = prepare_instance(
+       num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
 
-    # evaluate_events("../events/small_dataset/velo_event_", parameters, nr_events=1, plot_event=True)
-    # exit()
+    #evaluate_events(
+    #    project_root + "/events/small_dataset/velo_event_",
+    #    parameters,
+    #    nr_events=1,
+    #    plot_event=True,
+    #)
+    #exit()
 
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
