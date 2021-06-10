@@ -15,10 +15,12 @@ class ForwardSearch:
 
         '*********** Parameters **************'
         # NumberOfPreviousTracks = 200     # Parameter for number of previous tracks to check
-        XminY = 0.04 # accepted deviation between the x and y ratio values of the track and a hit h
-        YminZ = 0.04 # accepted deviation between the z and y ratio values of the track and a hit h
-        XminZ = 0.04 # accepted deviation between the x and z ratio values of the track and a hit h
+        XminY = 0.05 # accepted deviation between the x and y ratio values of the track and a hit h
+        YminZ = 0.05 # accepted deviation between the z and y ratio values of the track and a hit h
+        XminZ = 0.05 # accepted deviation between the x and z ratio values of the track and a hit h
         moduleDifferenceAllowed = 6 # How far apart can hits be to allow them to form a initial direction vector
+        tolerance=0.0007
+        lookAround = 6
         '*************************************'
         usedHits = np.zeros(len(self.hits)) # array to track used hits, if hit used in track set index of hit to 1.
         tracks = [] # list of tracks found
@@ -29,12 +31,12 @@ class ForwardSearch:
                 if(abs(self.hits[i].module_number - self.hits[i+1].module_number) < moduleDifferenceAllowed):
                     if(usedHits[i] == 0 and usedHits[i+1] == 0):
                         xDirection,yDirection,zDirection = calculateDirectionVector(self.hits[i],self.hits[i+1])
-                        checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
+                        checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ,lookAround)
         
-        tracks = combineTracks(tracks,5)
-        tracks = combineTracks(tracks,5)
-        tracks = combineTracks(tracks,3)
-        
+        # tracks = combineTracks2(tracks,5,tolerance)
+        # tracks = combineTracks2(tracks,5,tolerance)
+        # tracks = combineTracks2(tracks,3,tolerance)  
+
         return tracks
     
     # Similar to the first solve, now with the ability to use a hit if its neighbour has already been used.
@@ -45,6 +47,8 @@ class ForwardSearch:
         YminZ = 0.05 # accepted deviation between the z and y ratio values of the track and a hit h
         XminZ = 0.05 # accepted deviation between the x and z ratio values of the track and a hit h
         moduleDifferenceAllowed = 6
+        tolerance = 0.0007
+        lookAround = 6
         '*************************************'
         usedHits = np.zeros(len(self.hits)) # array to track used hits, if hit used in track set index of hit to 1.
         tracks = [] # list of tracks found
@@ -56,7 +60,7 @@ class ForwardSearch:
                     if(usedHits[i] == 0 and usedHits[i+1] == 0):
                         xDirection,yDirection,zDirection = calculateDirectionVector(self.hits[i],self.hits[i+1])
                         # checkForTrack(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
-                        tracks,usedHits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
+                        tracks,usedHits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ,lookAround)
                         
                     elif(usedHits[i]==0):
                         temp = i+1
@@ -65,7 +69,7 @@ class ForwardSearch:
                         if(usedHits[temp] == 0):
                             Direction,yDirection,zDirection = calculateDirectionVector(self.hits[i],self.hits[temp])
                             # checkForTrack(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
-                            tracks,Usedhits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
+                            tracks,Usedhits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ,lookAround)
                             
                     elif(usedHits[i+1]==0):
                         temp = i-1
@@ -74,18 +78,14 @@ class ForwardSearch:
                         if(usedHits[temp] == 0):
                             Direction,yDirection,zDirection = calculateDirectionVector(self.hits[temp],self.hits[i+1])
                             # checkForTrack(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
-                            tracks,Usedhits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ)
+                            tracks,Usedhits = checkForTrack2(i,self.hits,xDirection,yDirection,zDirection,tracks,usedHits,XminY,YminZ,XminZ,lookAround)
 
-        # tracks = combineTracks(tracks,4)
-        # tracks = combineTracks(tracks,3)
-        # tracks = combineTracks(tracks,3)
+        # tracks = combineTracks2(tracks,4,tolerance)
+        # tracks = combineTracks2(tracks,3,tolerance)
+        # tracks = combineTracks2(tracks,3,tolerance)
         
-        tracks = combineTracks(tracks,3)
-        tracks = combineTracks(tracks,4)
-
-
-
-        tracks = removeTracks(tracks,3)
+        # tracks = combineTracks2(tracks,3,tolerance)
+        # tracks = combineTracks2(tracks,4,tolerance)
      
         return tracks
 
@@ -114,7 +114,7 @@ def checkForTrack(i,hits,xDir,yDir,zDir,tracks,usedHits,XminY,YminZ,XminZ):
     indexList.append(i)
     indexList.append(i+1)
 
-    for j in range(1,6):  # 30 good # 8 gave 72% #6 provided 70 on large data set.
+    for j in range(1,8):  # 30 good # 8 gave 72% #6 provided 70 on large data set.
         if( i-j >= 0):
             if(xDir != 0 and yDir != 0 and zDir != 0 and usedHits[i-j]==0):
                 xRelation = (hits[i-j].x - hits[i].x)/xDir # difference in x values between track point and h,divided by x-direction of track
@@ -160,7 +160,7 @@ def combineTracks(tracks,lookAhead):
                 # lastHitSame = (tracks[t].hits[-1] != tracks[t+k].hits[-1])
                 # if(abs(MonotoneTrackT-tempMonotone) < 0.0015 and firstHitSame and lastHitSame):
                 # Increase value: more ghost, fewer clones , decrease value: fewer ghost, more clones
-                if(abs(MonotoneTrackT-tempMonotone) < 0.0011): #0.0011 and 0.0015 wok well. Increase value, more ghost, fewer clones
+                if(abs(MonotoneTrackT-tempMonotone) < 0.0007): #0.0011 and 0.0015 wok well. Increase value, more ghost, fewer clones
                     for z in range(len(tracks[t+k].hits)):
                         tracks[t].hits.append(tracks[t+k].hits[z]) # add it at the end
                     del tracks[t+k]
@@ -175,10 +175,7 @@ def combineTracks2(tracks,lookAhead,tolerance):
             MonotoneTrackT = calculateMonotoneApproximation(tracks[t].hits[0],tracks[t].hits[-1])
             tempMonotone = calculateMonotoneApproximation(tracks[t+temp].hits[0],tracks[t+temp].hits[-1])
 
-            firstHitSame = (tracks[t].hits[0] != tracks[t+temp].hits[0])
-            lastHitSame = (tracks[t].hits[-1] != tracks[t+temp].hits[-1])
-
-            if(abs(MonotoneTrackT-tempMonotone) < tolerance and firstHitSame and lastHitSame):
+            if(abs(MonotoneTrackT-tempMonotone) < tolerance):
                 for z in range(len(tracks[t+temp].hits)):
                     tracks[t].hits.append(tracks[t+temp].hits[z]) # add it at the end
                 del tracks[t+temp]
@@ -247,13 +244,13 @@ def sort_by_phi_projected(hits):
     return x
 
 
-def checkForTrack2(i,hits,xDir,yDir,zDir,tracks,usedHits,XminY,YminZ,XminZ):
+def checkForTrack2(i,hits,xDir,yDir,zDir,tracks,usedHits,XminY,YminZ,XminZ,lookAround):
 
     indexList = []
     indexList.append(i)
     indexList.append(i+1)
 
-    for j in range(1,8):  # 30 good # 8 gave 72s
+    for j in range(1,lookAround):  # 30 good # 8 gave 72s
         if( i-j >= 0):
             if(xDir != 0 and yDir != 0 and zDir != 0 and usedHits[i-j]==0):
                 xRelation = (hits[i-j].x - hits[i].x)/xDir # difference in x values between track point and h,divided by x-direction of track
