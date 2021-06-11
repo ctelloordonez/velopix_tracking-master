@@ -288,30 +288,37 @@ class Hopfield:
 
         # print("Network Converged after " + str(t) + " steps")
         # print("Energy = " + str(self.energies[-1]))
-        return self.N
+        return self.N , self.energies[-1]
 
-    def bootstrap_converge(self, bootstraps=50):
+    def bootstrap_converge(self, bootstraps=50, method="mean"):
         start_time = time.time()
         states_list = []
+        energy_list = []
         for i in range(bootstraps):
 
             if self.p["random_neuron_init"]:
                 # We only need to reinitialize if we randomly initialize
                 self.init_neurons()
 
-            states = self.converge().copy()
+            states, energy = self.converge()
+            print("energy: " + str(energy))
 
             states_list.append(states)
+            energy_list.append(energy)
             # print(f"Finished {i+1}/{bootstraps} iterations")
 
-        stacked_states = np.stack(states_list, axis=2)
 
-        self.N = np.mean(stacked_states, axis=2)
+        if method == "minimum":
+            self.N = states_list[np.argmin(energy_list)]
+        else:
+            stacked_states = np.stack(states_list, axis=2)
+            self.N = np.mean(stacked_states, axis=2)
+
 
         end_time = time.time() - start_time
         print(
-            "[HOPFIELD] converged after %i mins %.2f seconds"
-            % (end_time // 60, end_time % 60)
+            "[HOPFIELD] converged network by %s after %i mins %.2f seconds; (energy: %.2f)"
+            % (method, end_time // 60, end_time % 60, np.mean(energy_list))
         )
 
     def tracks(self):
@@ -429,7 +436,7 @@ class Hopfield:
             global_candidate_states = global_candidate_states + [states]
             global_candidate_info = global_candidate_info + [info]
 
-        # here comes the funtion of 'pruning...' maybe i need to store more info for doing that!!!
+        # here comes the function of 'pruning...' maybe i need to store more info for doing that!!!
         global_candidates = self.prune_tracks(global_candidates, global_candidate_info)
 
         global_candidates = [em.track(hits) for hits in global_candidates]
@@ -684,14 +691,15 @@ def load_event(file_name, plot_event=False):
     return json_data_event, (modules_even, modules_odd)
 
 
-def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
+def evaluate_events(file_name, parameters, nr_events=1, plot_event=False, bootstrap_method="mean"):
 
     json_data_all_events = []
     all_tracks = []
 
     for i in range(nr_events):
+        
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
-        json_data_event, modules = load_event(file_name + str(i) + ".json")
+        json_data_event, modules = load_event(file_name + str(i) + ".json", plot_event=True)
 
         start_time = time.time()
         even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
@@ -702,8 +710,8 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
             % (end_time // 60, end_time % 60)
         )
 
-        even_hopfield.bootstrap_converge(bootstraps=4)
-        odd_hopfield.bootstrap_converge(bootstraps=4)
+        even_hopfield.bootstrap_converge(bootstraps=4, method=bootstrap_method)
+        odd_hopfield.bootstrap_converge(bootstraps=4, method=bootstrap_method)
 
         start_time = time.time()
         even_hopfield.mark_bifurcation(zero=False, max_activation=True)
@@ -722,7 +730,7 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False):
 
         if plot_event:
             even_hopfield.plot_network_results()
-            even_hopfield.plot_network_results()
+            odd_hopfield.plot_network_results()
 
     start_time = time.time()
     vl.validate_print(json_data_all_events, all_tracks)
@@ -769,8 +777,8 @@ if __name__ == "__main__":
     #######################################################
 
     modules, tracks = load_instance("test.txt", plot_events=True)
-    modules, tracks = prepare_instance(
-       num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt"
+    # modules, tracks = prepare_instance(
+    #    num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt")
 
     #evaluate_events(
     #    project_root + "/events/small_dataset/velo_event_",
@@ -794,11 +802,12 @@ if __name__ == "__main__":
     # plt.plot(my_instance.energies)
     # plt.show()
 
-    my_instance.bootstrap_converge(bootstraps=4)
+    my_instance.bootstrap_converge(bootstraps=4, method="mean")
     print("Converged:", my_instance.energies[-1])
-    my_instance.mark_bifurcation(zero=False, max_activation=True)
-    my_instance.full_tracks()
-    my_instance.plot_network_results(show_states=False)
+    my_instance.tracks()
+    # my_instance.mark_bifurcation(zero=False, max_activation=True)
+    # my_instance.full_tracks()
+    my_instance.plot_network_results(show_states=True)
     # my_instance.tracks()
     # my_instance.plot_network_results(show_states=True)
 
