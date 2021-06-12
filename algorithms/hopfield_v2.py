@@ -14,6 +14,7 @@ import seaborn as sns
 from numpy.core.fromnumeric import shape
 import random
 import time
+import math
 
 ########################## LOCAL DEPENDENCIES #################################
 filename = inspect.getframeinfo(inspect.currentframe()).filename
@@ -38,6 +39,13 @@ def nostdout():
     yield
     sys.stdout = save_stdout
 
+########################### HELPER FUNCTIONS ##################################
+def get_polar_coordinates(x, y):
+    r = math.sqrt(x ** 2 + y ** 2)
+    phi = math.atan2(x, y)
+    if phi < 0:
+        phi = math.pi - phi
+    return r, phi
 
 ############################### BODY ##########################################
 
@@ -88,7 +96,7 @@ class Hopfield:
             self.N = np.zeros(shape=(self.modules_count - 1, self.max_neurons))
         for idx, nc in enumerate(self.neuron_count):
             self.N[idx, nc:] = 0
-        self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 3))
+        self.N_info = np.zeros(shape=(self.modules_count - 1, self.max_neurons, 4))
         for idx in range(self.modules_count - 1):
             m1 = self.m[idx]
             m2 = self.m[idx + 1]
@@ -106,9 +114,16 @@ class Hopfield:
                     norm_dist = sqrt(
                         (hit2.y - hit1.y) ** 2 + (hit2.x - hit1.x) ** 2
                     ) / sqrt((hit2.z - hit1.z) ** 2)
+
+                    _, r_hit1 = get_polar_coordinates(hit1.x, hit1.y)
+                    _, r_hit2 = get_polar_coordinates(hit2.x, hit2.y)
+                    monotone_dist = (r_hit2 - r_hit1) / (hit2.z - hit1.z)
+
                     self.N_info[idx, n_idx, 0] = abs(angle_xz)
                     self.N_info[idx, n_idx, 1] = abs(angle_yz)
                     self.N_info[idx, n_idx, 2] = norm_dist
+                    self.N_info[idx, n_idx, 3] = monotone_dist
+
 
     def init_weights(self):
         #### get params from the dict #######
@@ -147,6 +162,26 @@ class Hopfield:
                             self.p["constant_factor"],
                         )
 
+
+                        # monotone constant
+                        monotone_constant = (
+                            self.N_info[w_idx, ln_idx, 3]
+                            - self.N_info[w_idx + 1, rn_idx, 3]
+                        )
+                        monotone_constant = tanh(monotone_constant) * (
+                            self.p["narrowness"] + 1
+                        )  # tanh to force between -1 and 1
+                        monotone_constant = (
+                            -2 * monotone_constant ** 2
+                        ) + 1  # this should be high if both terms are similar and low/penalizing if both are not similar
+                        monotone_constant = monotone_constant * self.p["monotone_constant_factor"]
+                        monotone_constant = min(
+                            max(monotone_constant, -self.p["monotone_constant_factor"]),
+                            self.p["monotone_constant_factor"],
+                        )
+
+                        print(monotone_constant)
+
                         theta = abs(
                             self.N_info[w_idx, ln_idx, 0]
                             - self.N_info[w_idx + 1, rn_idx, 0]
@@ -159,7 +194,8 @@ class Hopfield:
                             alpha
                             * ((1 - sin(theta)) ** beta)
                             * ((1 - sin(phi)) ** gamma)
-                            + constant,
+                            + constant
+                            + monotone_constant,
                             0,
                         )
 
@@ -309,7 +345,8 @@ class Hopfield:
 
 
         if method == "minimum":
-            self.N = states_list[np.argmin(energy_list)]
+            self.N = states_list[np.argmax(energy_list)]
+            energy_list = [np.amax(energy_list)]
         else:
             stacked_states = np.stack(states_list, axis=2)
             self.N = np.mean(stacked_states, axis=2)
@@ -760,6 +797,7 @@ if __name__ == "__main__":
         "GAMMA": 10,
         "narrowness": 200,
         "constant_factor": 0.9,
+        "monotone_constant_factor": 0.0,
         #### UPDATE ###
         "T": 5,
         "B": 0.2,
@@ -771,14 +809,14 @@ if __name__ == "__main__":
         "maxActivation": True,
         "THRESHOLD": 0.3,
         ##### CONVERGENCE ###
-        "convergence_threshold": 0.00005,
+        "convergence_threshold": 0.00000005,
     }
     ###########
     #######################################################
 
     modules, tracks = load_instance("test.txt", plot_events=True)
     # modules, tracks = prepare_instance(
-    #    num_modules=26, plot_events=True, num_tracks=50, save_to_file="test.txt")
+    #    num_modules=3, plot_events=True, num_tracks=10, save_to_file="test.txt")
 
     #evaluate_events(
     #    project_root + "/events/small_dataset/velo_event_",
@@ -802,12 +840,13 @@ if __name__ == "__main__":
     # plt.plot(my_instance.energies)
     # plt.show()
 
-    my_instance.bootstrap_converge(bootstraps=4, method="mean")
+    my_instance.bootstrap_converge(bootstraps=1, method="mean")
     print("Converged:", my_instance.energies[-1])
     my_instance.tracks()
-    # my_instance.mark_bifurcation(zero=False, max_activation=True)
-    # my_instance.full_tracks()
     my_instance.plot_network_results(show_states=True)
+    my_instance.mark_bifurcation(zero=False, max_activation=True)
+    my_instance.full_tracks()
+    my_instance.plot_network_results(show_states=False)
     # my_instance.tracks()
     # my_instance.plot_network_results(show_states=True)
 
