@@ -26,14 +26,17 @@ for s_number in range(0, event.number_of_modules):
     event.modules[s_number].z = event.modules[s_number].hits()[0].z
 
 tracks = tracks_from_data(json_data, only_reconstructible=True)
+ghost = vl.ghost_from_reconstruction(json_data, SearchByPhi(event).solve3())
 
 search_by_phi = SearchByPhi(event)
 solutions["search_by_phi"] = search_by_phi.solve()
 
 save_to_file = True
 
-plot_phi_by_module(event, tracks, filename='phi_by_module_full', save_to_file=True)
-plot_phi_by_module(event, solutions["search_by_phi"], filename='phi_by_module_search_by_phi', save_to_file=True)
+print_event_2d_phi_r(event, tracks, filename='non_ghost_tracks', save_to_file=True)
+
+# print_event_3d_phi(event, tracks, filename='cilindertry', save_to_file=False)
+# plot_phi_by_module(event, solutions["search_by_phi"], filename='phi_by_module_search_by_phi', save_to_file=True)
 
 # print_event_2d_phi(event, tracks, x=2, phix=0, phiy=1, filename="minibias event0 phi by z", save_to_file=True)
 # print_event_2d_phi(event, tracks, x=0, phix=1, phiy=2, filename="minibias event0 theta by x", save_to_file=True)
