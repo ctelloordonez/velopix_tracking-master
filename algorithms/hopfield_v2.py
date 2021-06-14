@@ -39,6 +39,7 @@ def nostdout():
     yield
     sys.stdout = save_stdout
 
+
 ########################### HELPER FUNCTIONS ##################################
 def get_polar_coordinates(x, y):
     r = math.sqrt(x ** 2 + y ** 2)
@@ -46,6 +47,7 @@ def get_polar_coordinates(x, y):
     if phi < 0:
         phi = math.pi - phi
     return r, phi
+
 
 ############################### BODY ##########################################
 
@@ -85,7 +87,7 @@ class Hopfield:
         self.extracted_track_states = []
         self.energies = []
 
-    def init_neurons(self, unit=True, tracks: list = None):
+    def init_neurons(self, tracks: list = None):
         # cosider hits in 2 modules
         # the neurons in N are ordered h1,1-h2,1; h1,1-h2,2; h1,1-h2,3 etc
         if self.p["random_neuron_init"]:
@@ -124,7 +126,6 @@ class Hopfield:
                     self.N_info[idx, n_idx, 2] = norm_dist
                     self.N_info[idx, n_idx, 3] = monotone_dist
 
-
     def init_weights(self):
         #### get params from the dict #######
         alpha = self.p["ALPHA"]
@@ -162,7 +163,6 @@ class Hopfield:
                             self.p["constant_factor"],
                         )
 
-
                         # monotone constant
                         monotone_constant = (
                             self.N_info[w_idx, ln_idx, 3]
@@ -174,13 +174,13 @@ class Hopfield:
                         monotone_constant = (
                             -2 * monotone_constant ** 2
                         ) + 1  # this should be high if both terms are similar and low/penalizing if both are not similar
-                        monotone_constant = monotone_constant * self.p["monotone_constant_factor"]
+                        monotone_constant = (
+                            monotone_constant * self.p["monotone_constant_factor"]
+                        )
                         monotone_constant = min(
                             max(monotone_constant, -self.p["monotone_constant_factor"]),
                             self.p["monotone_constant_factor"],
                         )
-
-                        print(monotone_constant)
 
                         theta = abs(
                             self.N_info[w_idx, ln_idx, 0]
@@ -280,13 +280,20 @@ class Hopfield:
             c2 = self.hit_counts[idx + 1]
             c3 = self.hit_counts[idx + 2]
 
+            # XXX: just realised we are counting most penalties too often!! -> fixed
+            f1 = 0.5
+            f2 = 0.5
+            if idx == 0:
+                f1 = 1
+            if idx == self.modules_count - 3:
+                f2 = 1
             N1_pen = self.N[idx, : c1 * c2].reshape(c2, c1)
             N2_pen = self.N[idx + 1, : c2 * c3].reshape(c2, c3)
             bifurc_pen = (
-                np.sum(np.trace(N1_pen @ N1_pen.T))
-                + np.sum(np.trace(N2_pen @ N2_pen.T))
-                - np.sum(self.N[idx, :] * self.N[idx, :])
-                - np.sum(self.N[idx + 1, :] * self.N[idx + 1, :])
+                np.sum(np.trace(N1_pen @ N1_pen.T)) * f1
+                + np.sum(np.trace(N2_pen @ N2_pen.T)) * f2
+                - np.sum(self.N[idx, :] * self.N[idx, :]) * f1
+                - np.sum(self.N[idx + 1, :] * self.N[idx + 1, :]) * f2
             )
 
             E += (
@@ -316,15 +323,18 @@ class Hopfield:
             self.energies.append(self.energy())
             # print(f"N at iteration{t}:", np.round(my_instance.N, 1))
             t += 1
-            self.p["T"] = self.p["T_decay"](self.p["T"])
-            # XXX: added b decay
-            self.p["B"] = self.p["B_decay"](t)
+            if not self.p["decay_off"]:
+                self.p["T"] = self.p["T_decay"](self.p["T"])
+                # XXX: added b decay
+                self.p["B"] = self.p["B_decay"](t)
+            else:
+                pass
 
             # print("T: " + str(t) + " Flips : " + str(self.flips))
 
         # print("Network Converged after " + str(t) + " steps")
         # print("Energy = " + str(self.energies[-1]))
-        return self.N , self.energies[-1]
+        return self.N, self.energies[-1]
 
     def bootstrap_converge(self, bootstraps=50, method="mean"):
         start_time = time.time()
@@ -343,14 +353,12 @@ class Hopfield:
             energy_list.append(energy)
             # print(f"Finished {i+1}/{bootstraps} iterations")
 
-
         if method == "minimum":
             self.N = states_list[np.argmax(energy_list)]
             energy_list = [np.amax(energy_list)]
         else:
             stacked_states = np.stack(states_list, axis=2)
             self.N = np.mean(stacked_states, axis=2)
-
 
         end_time = time.time() - start_time
         print(
@@ -728,15 +736,19 @@ def load_event(file_name, plot_event=False):
     return json_data_event, (modules_even, modules_odd)
 
 
-def evaluate_events(file_name, parameters, nr_events=1, plot_event=False, bootstrap_method="mean"):
+def evaluate_events(
+    file_name, parameters, nr_events=1, plot_event=False, bootstrap_method="mean"
+):
 
     json_data_all_events = []
     all_tracks = []
 
     for i in range(nr_events):
-        
+
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
-        json_data_event, modules = load_event(file_name + str(i) + ".json", plot_event=True)
+        json_data_event, modules = load_event(
+            file_name + str(i) + ".json", plot_event=True
+        )
 
         start_time = time.time()
         even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
@@ -773,7 +785,7 @@ def evaluate_events(file_name, parameters, nr_events=1, plot_event=False, bootst
     vl.validate_print(json_data_all_events, all_tracks)
     end_time = time.time() - start_time
 
-# we could check how many tracks acutally cross the detector sides i guess to identify where some clones come from...
+    # we could check how many tracks acutally cross the detector sides i guess to identify where some clones come from...
     print(
         "[INFO] validation excecuted in %i mins %.2f seconds"
         % (end_time // 60, end_time % 60)
@@ -803,6 +815,7 @@ if __name__ == "__main__":
         "B": 0.2,
         "B_decay": lambda t: max(0.1, t * 0.04),
         "T_decay": lambda t: max(1e-8, t * 0.01),
+        "decay_off": False,
         "sync_rounds": 0,
         "randomized_updates": True,
         #### THRESHOLD ###
@@ -814,18 +827,18 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
-    modules, tracks = load_instance("test.txt", plot_events=True)
+    # modules, tracks = load_instance("test.txt", plot_events=True)
     # modules, tracks = prepare_instance(
-    #    num_modules=3, plot_events=True, num_tracks=10, save_to_file="test.txt")
+    #    num_modules=26, plot_events=True, num_tracks=30, save_to_file="test.txt"
+    # )
 
-    #evaluate_events(
-    #    project_root + "/events/small_dataset/velo_event_",
-    #    parameters,
-    #    nr_events=1,
-    #    plot_event=True,
-    #)
-    #exit()
-
+    evaluate_events(
+        project_root + "/events/small_dataset/velo_event_",
+        parameters,
+        nr_events=1,
+        plot_event=True,
+    )
+    exit()
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
     #     sns.heatmap(my_instance.W[i])
@@ -841,9 +854,9 @@ if __name__ == "__main__":
     # plt.show()
 
     my_instance.bootstrap_converge(bootstraps=1, method="mean")
-    print("Converged:", my_instance.energies[-1])
-    my_instance.tracks()
-    my_instance.plot_network_results(show_states=True)
+    # print("Converged:", my_instance.energies[-1])
+    # my_instance.tracks()
+    # my_instance.plot_network_results(show_states=True)
     my_instance.mark_bifurcation(zero=False, max_activation=True)
     my_instance.full_tracks()
     my_instance.plot_network_results(show_states=False)
