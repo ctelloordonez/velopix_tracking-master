@@ -42,9 +42,12 @@ for (dirpath, dirnames, filenames) in os.walk("C:/Users/tjerk/Documents/GitHub/v
         solutions["search_by_phi"].append(temp)
         validation_data.append(json_data)
 
-print('Execution time in seconds: ' + str(executionTime))
-# Validate the solutions
+print('Throughput rate in events per second: ' + str(995/executionTime))
+
+# Validate the solution
 for k, v in iter(sorted(solutions.items())):
+
     print("\nValidating tracks from %s:" % (k))
     vl.validate_print(validation_data, v)
     print()
+

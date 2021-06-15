@@ -176,8 +176,8 @@ class SearchByConstant:
     def solve3 (self):
 
             '***********Parameters ***************'
-            NumberOfPreviousTracks = 3    # Parameter for number of previous tracks to check
-            constantDifference = 0.005 # accepted deviation in constant values of the track and a hit h
+            NumberOfPreviousTracks = 15    # Parameter for number of previous tracks to check
+            constantDifference = 0.05 # accepted deviation in constant values of the track and a hit h
             angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
             trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
             beginOrEnd = -1 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
@@ -377,18 +377,18 @@ class SearchByConstant:
 
             # tracks = combineTracks(tracks,5)
             # tracks = combineTracks(tracks,4)
-            # removeTracks(tracks,3)
+            tracks = removeTracks(tracks,3)
             return tracks
 
       # method that checks previous tracks
     def solve5(self):
 
         '***********Parameters ***************'
-        NumberOfPreviousTracks = 10    # Parameter for number of previous tracks to check
-        XminY = 0.02 # accepted deviation between the x and y ratio values of the track and a hit h
-        YminZ = 0.02 # accepted deviation between the z and y ratio values of the track and a hit h
-        XminZ = 0.02 # accepted deviation between the x and z ratio values of the track and a hit h
-        angleDifference = 0.005 # accepted deviation between the polar angle in x,y values of the current track and a hit h
+        NumberOfPreviousTracks = 20    # Parameter for number of previous tracks to check
+        XminY = 0.05 # accepted deviation between the x and y ratio values of the track and a hit h
+        YminZ = 0.05 # accepted deviation between the z and y ratio values of the track and a hit h
+        XminZ = 0.05 # accepted deviation between the x and z ratio values of the track and a hit h
+        angleDifference = 0.01 # accepted deviation between the polar angle in x,y values of the current track and a hit h
         trackGreaterThan = 1 # we only make the current_track a real track if its length is greater than this value
         beginOrEnd = -1 # set to 0 to compare hit polar angle to polar angle of the first hit of the track, or -1 to compare to last hit of the track
         '*************************************'
@@ -524,15 +524,15 @@ class SearchByConstant:
         if len(current_track) > trackGreaterThan:
             tracks.append(em.track(current_track)) # append final track if longer than 1
         
-        # tracks = combineTracks(tracks,3)
-        # tracks = combineTracks(tracks,2)
-        # tracks = combineTracks(tracks,3)
-        # tracks = combineTracks(tracks,2)
+        tracks = combineTracks(tracks,3)
+        tracks = combineTracks(tracks,2)
+        tracks = combineTracks(tracks,3)
+        tracks = combineTracks(tracks,2)
 
         
         
 
-        # tracks = removeTracks(tracks,3)
+        tracks = removeTracks(tracks,3)
         return tracks
 
 def combineTracks(tracks,lookAhead):
