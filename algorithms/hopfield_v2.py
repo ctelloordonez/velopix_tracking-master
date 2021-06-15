@@ -782,7 +782,8 @@ def evaluate_events(
             odd_hopfield.plot_network_results()
 
     start_time = time.time()
-    vl.validate_print(json_data_all_events, all_tracks)
+    velo, long, long5, long_strange, \
+    long_strange5, long_fromb, long_fromb5 = vl.validate_print(json_data_all_events, all_tracks, return_data=True)
     end_time = time.time() - start_time
 
     # we could check how many tracks acutally cross the detector sides i guess to identify where some clones come from...
