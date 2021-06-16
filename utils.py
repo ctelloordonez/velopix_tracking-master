@@ -1,5 +1,7 @@
 import math
 
+from validator.validator_lite import parse_json_data, comp_weights, hit_purity, ghosts
+
 
 def get_polar_coordinates(x, y):
     r = math.sqrt(x ** 2 + y ** 2)
@@ -35,3 +37,10 @@ def get_space_bins(event, k=4, coordinate=2):
             if b * (space_range / k) < value <= (b+1) * (space_range / k):
                 cluster_bin.append(hit)
     return bins
+
+
+def ghost_from_reconstruction(event_json_data, tracks_list):
+    event = parse_json_data(event_json_data)
+    weights = comp_weights(tracks_list, event)
+    t2p, _ = hit_purity(tracks_list, event.particles, weights)
+    return ghosts(t2p)

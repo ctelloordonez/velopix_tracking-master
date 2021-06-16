@@ -283,13 +283,6 @@ def ghost_rate(t2p):
     return float(nghosts)/ntracks, nghosts
 
 
-def ghost_from_reconstruction(event_json_data, tracks_list):
-    event = parse_json_data(event_json_data)
-    weights = comp_weights(tracks_list, event)
-    t2p, _ = hit_purity(tracks_list, event.particles, weights)
-    return ghosts(t2p)
-
-
 def validate_print(events_json_data, tracks_list):
     tracking_data = []
     for event, tracks in zip(events_json_data, tracks_list):
