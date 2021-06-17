@@ -344,6 +344,20 @@ class Hopfield:
             # XXX: eventually we could take the lowest 20% or so
             self.N = states_list[np.argmax(energy_list)]
             energy_list = [np.amax(energy_list)]
+        elif method == "below_median":
+            median = np.median(energy_list)
+            _tmp_states = []
+            for states, e in zip(states_list, energy_list):
+                if e <= median:
+                    _tmp_states.append(states)
+            self.N = np.mean(_tmp_states, axis=2)
+        elif method == "below_mean":
+            mean = np.mean(energy_list)
+            _tmp_states = []
+            for states, e in zip(states_list, energy_list):
+                if e <= mean:
+                    _tmp_states.append(states)
+            self.N = np.mean(_tmp_states, axis=2)
         else:
             stacked_states = np.stack(states_list, axis=2)
             self.N = np.mean(stacked_states, axis=2)
@@ -785,7 +799,7 @@ def load_event(file_name, plot_event=False):
 
 
 def evaluate_events(
-    file_name, parameters, nr_events=1, plot_event=False, bootstrap_method="mean", output_file=None
+    file_name, parameters, nr_events=1, plot_event=False, output_file=None
 ):
 
     json_data_all_events = []
@@ -810,10 +824,10 @@ def evaluate_events(
         )
 
         iter_even = even_hopfield.bootstrap_converge(
-            bootstraps=parameters["bootstrap_iters"], method=bootstrap_method
+            bootstraps=parameters["bootstrap_iters"], method=parameters['bootstrap_method']
         )
         iter_odd = odd_hopfield.bootstrap_converge(
-            bootstraps=parameters["bootstrap_iters"], method=bootstrap_method
+            bootstraps=parameters["bootstrap_iters"], method=parameters['bootstrap_method']
         )
 
         start_time = time.time()
@@ -858,11 +872,11 @@ def mse(network, tracks):
     return ((network.N - true_network.N) ** 2).mean(axis=None)
 
 
-def save_experiment(exp_name, exp_num, desc, p, event_file_name, nr_events, bootstraps_method="mean"):
+def save_experiment(exp_name, exp_num, desc, p, event_file_name, nr_events):
     f = open("experiments/"+exp_name+".txt", 'a')
     f.write(f"Experiment {exp_num}\n\n{desc}\nNumber of events: {nr_events}\nParameters: {p}\n")
     f.close()
-    evaluate_events(project_root + event_file_name, p, nr_events, False, bootstraps_method, "experiments/"+exp_name+".txt")
+    evaluate_events(project_root + event_file_name, p, nr_events, False,  "experiments/"+exp_name+".txt")
     f = open("experiments/"+exp_name+".txt", 'a')
 
 
@@ -893,7 +907,8 @@ if __name__ == "__main__":
         "THRESHOLD": 0.3,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
-        "bootstrap_iters": 1,
+        "bootstrap_iters": 10,
+        "bootstrap_method": "below_mean",
         ###### BIFURC REMOVAL #####
         "smart": True,
         "only_weight": False,
@@ -910,7 +925,7 @@ if __name__ == "__main__":
     #     num_modules=10, plot_events=True, num_tracks=20, save_to_file="test.txt"
     # )
 
-    save_experiment("test_1", 1, "Initial Test", parameters, "/events/minibias/velo_event_", 1, "mean")
+    save_experiment("bootstrap_method", 2, "Below Mean", parameters, "/events/minibias/velo_event_", 1)
 
     # evaluate_events(
     #     project_root + "/events/small_dataset/velo_event_",
