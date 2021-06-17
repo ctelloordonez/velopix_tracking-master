@@ -860,7 +860,7 @@ def mse(network, tracks):
 
 def save_experiment(exp_name, exp_num, desc, p, event_file_name, nr_events, bootstraps_method="mean"):
     f = open("experiments/"+exp_name+".txt", 'a')
-    f.write(f"Experiment {exp_num}\n\n{desc}\nParameters: {p}\n")
+    f.write(f"Experiment {exp_num}\n\n{desc}\nNumber of events: {nr_events}\nParameters: {p}\n")
     f.close()
     evaluate_events(project_root + event_file_name, p, nr_events, False, bootstraps_method, "experiments/"+exp_name+".txt")
     f = open("experiments/"+exp_name+".txt", 'a')
