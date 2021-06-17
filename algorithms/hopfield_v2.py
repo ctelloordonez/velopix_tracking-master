@@ -250,7 +250,7 @@ class Hopfield:
         _update = 0.5 * (1 + tanh(update / t - b * pen / t))
 
         if self.p["binary_states"]:
-            # XXX some threshold...
+            # XXX some threshold... -> we dont use bina
             if random.random() < _update:
                 self.N[idx, i] = 1
             else:
@@ -489,8 +489,8 @@ class Hopfield:
             cand = [track[0], track[1]]
             cand_info = info[0]
             for idx in range(1, num_hits - 1):
-                # print(abs(sum(cand_info - info[idx])))
-                if abs(sum(cand_info - info[idx])) < tr:
+                # if sum(abs(cand_info[3] - info[idx][3])) < tr:
+                if sum(abs(cand_info - info[idx])) < tr:
                     cand = cand + [track[idx + 1]]
                 else:
                     if len(cand) > 2:
@@ -804,8 +804,12 @@ def evaluate_events(
             % (end_time // 60, end_time % 60)
         )
 
-        even_hopfield.bootstrap_converge(bootstraps=4, method=bootstrap_method)
-        odd_hopfield.bootstrap_converge(bootstraps=4, method=bootstrap_method)
+        even_hopfield.bootstrap_converge(
+            bootstraps=parameters["bootstrap_iters"], method=bootstrap_method
+        )
+        odd_hopfield.bootstrap_converge(
+            bootstraps=parameters["bootstrap_iters"], method=bootstrap_method
+        )
 
         start_time = time.time()
         even_hopfield.mark_bifurcation()
@@ -827,8 +831,15 @@ def evaluate_events(
             odd_hopfield.plot_network_results()
 
     start_time = time.time()
-    velo, long, long5, long_strange, \
-    long_strange5, long_fromb, long_fromb5 = vl.validate_print(json_data_all_events, all_tracks, return_data=True)
+    (
+        velo,
+        long,
+        long5,
+        long_strange,
+        long_strange5,
+        long_fromb,
+        long_fromb5,
+    ) = vl.validate_print(json_data_all_events, all_tracks, return_data=True)
     end_time = time.time() - start_time
 
     # we could check how many tracks acutally cross the detector sides i guess to identify where some clones come from...
@@ -848,7 +859,7 @@ if __name__ == "__main__":
     parameters = {
         ### NEURONS ###
         "random_neuron_init": True,
-        "binary_states": False,
+        "binary_states": False,  # try it out once maybe but scrap it
         ### WEIGHTS ###
         "ALPHA": 1,
         "BETA": 10,
@@ -857,11 +868,11 @@ if __name__ == "__main__":
         "constant_factor": 0.9,
         "monotone_constant_factor": 0.9,
         #### UPDATE ###
-        "T": 5,
-        "B": 0.2,
-        "B_decay": lambda t: max(0.1, t * 0.04),
-        "T_decay": lambda t: max(1e-8, t * 0.01),
-        "decay_off": False,
+        "T": 5,  # try to experiment with these rather
+        "B": 0.2,  # try to experiment with these rather
+        "B_decay": lambda t: max(0.1, t * 0.04),  # try to remove these
+        "T_decay": lambda t: max(1e-8, t * 0.01),  # try to remove these
+        "decay_off": False,  # using this
         "randomized_updates": True,
         "fully_randomized_updates": False,
         #### THRESHOLD ###
@@ -869,10 +880,11 @@ if __name__ == "__main__":
         "THRESHOLD": 0.3,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
+        "bootstrap_iters": 3,
         ###### BIFURC REMOVAL #####
         "smart": True,
-        "max_activation": False,
         "only_weight": False,
+        "max_activation": False,
         ###### Track prunning #######
         # here we could set the threshold
         "pruning_tr": 0.5,
@@ -881,17 +893,17 @@ if __name__ == "__main__":
     #######################################################
 
     # modules, tracks = load_instance("test.txt", plot_events=True)
-    modules, tracks = prepare_instance(
-        num_modules=10, plot_events=True, num_tracks=20, save_to_file="test.txt"
-    )
-
-    # evaluate_events(
-    #    project_root + "/events/small_dataset/velo_event_",
-    #    parameters,
-    #    nr_events=1,
-    #    plot_event=True,
+    # modules, tracks = prepare_instance(
+    #     num_modules=10, plot_events=True, num_tracks=20, save_to_file="test.txt"
     # )
-    # exit()
+
+    evaluate_events(
+        project_root + "/events/small_dataset/velo_event_",
+        parameters,
+        nr_events=1,
+        plot_event=True,
+    )
+    exit()
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
     #     sns.heatmap(my_instance.W[i])
