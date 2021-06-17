@@ -350,6 +350,7 @@ class Hopfield:
             for states, e in zip(states_list, energy_list):
                 if e <= median:
                     _tmp_states.append(states)
+            _tmp_states = np.stack(_tmp_states, axis=2)
             self.N = np.mean(_tmp_states, axis=2)
         elif method == "below_mean":
             mean = np.mean(energy_list)
@@ -357,6 +358,7 @@ class Hopfield:
             for states, e in zip(states_list, energy_list):
                 if e <= mean:
                     _tmp_states.append(states)
+            _tmp_states = np.stack(_tmp_states, axis=2)
             self.N = np.mean(_tmp_states, axis=2)
         else:
             stacked_states = np.stack(states_list, axis=2)
@@ -908,7 +910,7 @@ if __name__ == "__main__":
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
         "bootstrap_iters": 10,
-        "bootstrap_method": "below_mean",
+        "bootstrap_method": "below_median",
         ###### BIFURC REMOVAL #####
         "smart": True,
         "only_weight": False,
