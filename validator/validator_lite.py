@@ -168,8 +168,6 @@ def update_efficiencies(eff, event, tracks, weights, label, cond):
     else:
         eff.add_event(t2p, p2t, particles_filtered, event)
 
-    print("Type:", type(eff))
-
     return eff
 
 def comp_weights(tracks, event):
@@ -339,7 +337,7 @@ def validate_print(events_json_data, tracks_list, return_data=False):
     if eff_long_fromb5: print(eff_long_fromb5)
 
     if return_data:
-        return eff_velo, eff_long, eff_long5, eff_long_strange, eff_long_strange5, eff_long_fromb, eff_long_fromb5
+        return avg_ghost_rate, eff_velo, eff_long, eff_long5, eff_long_strange, eff_long_strange5, eff_long_fromb, eff_long_fromb5
 
 def validate(events_json_data, tracks_list, particle_type="long>5GeV"):
     '''Returns just the Efficiency object of the particle_type requested.

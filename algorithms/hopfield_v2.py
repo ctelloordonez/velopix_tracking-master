@@ -319,23 +319,25 @@ class Hopfield:
 
         # print("Network Converged after " + str(t) + " steps")
         # print("Energy = " + str(self.energies[-1]))
-        return self.N, self.energies[-1]
+        return self.N, self.energies[-1], t
 
     def bootstrap_converge(self, bootstraps=50, method="mean"):
         start_time = time.time()
         states_list = []
         energy_list = []
+        iter_list = []
         for i in range(bootstraps):
 
             if self.p["random_neuron_init"]:
                 # We only need to reinitialize if we randomly initialize
                 self.init_neurons()
 
-            states, energy = self.converge()
+            states, energy, iters = self.converge()
             print("energy: " + str(energy))
 
             states_list.append(states)
             energy_list.append(energy)
+            iter_list.append(iters)
             # print(f"Finished {i+1}/{bootstraps} iterations")
 
         if method == "minimum":
@@ -351,6 +353,7 @@ class Hopfield:
             "[HOPFIELD] converged network by %s after %i mins %.2f seconds; (energy: %.2f)"
             % (method, end_time // 60, end_time % 60, np.mean(energy_list))
         )
+        return sum(iter_list)/len(iter_list)
 
     def tracks(self):
         # What the papers say:  The answer is given by the final set of active Neurons
@@ -782,11 +785,13 @@ def load_event(file_name, plot_event=False):
 
 
 def evaluate_events(
-    file_name, parameters, nr_events=1, plot_event=False, bootstrap_method="mean"
+    file_name, parameters, nr_events=1, plot_event=False, bootstrap_method="mean", output_file=None
 ):
 
     json_data_all_events = []
     all_tracks = []
+    iter_even = 1
+    iter_odd = 1
 
     for i in range(nr_events):
 
@@ -804,10 +809,10 @@ def evaluate_events(
             % (end_time // 60, end_time % 60)
         )
 
-        even_hopfield.bootstrap_converge(
+        iter_even = even_hopfield.bootstrap_converge(
             bootstraps=parameters["bootstrap_iters"], method=bootstrap_method
         )
-        odd_hopfield.bootstrap_converge(
+        iter_odd = odd_hopfield.bootstrap_converge(
             bootstraps=parameters["bootstrap_iters"], method=bootstrap_method
         )
 
@@ -831,15 +836,14 @@ def evaluate_events(
             odd_hopfield.plot_network_results()
 
     start_time = time.time()
-    (
-        velo,
-        long,
-        long5,
-        long_strange,
-        long_strange5,
-        long_fromb,
-        long_fromb5,
-    ) = vl.validate_print(json_data_all_events, all_tracks, return_data=True)
+    if output_file:
+        print(output_file)
+        sys.stdout = open(output_file, 'a')
+        print(f"Average number of iterations per convergence: {(iter_even+iter_odd)/2}")
+        vl.validate_print(json_data_all_events, all_tracks, return_data=True)
+        print("____________________")
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
     end_time = time.time() - start_time
 
     # we could check how many tracks acutally cross the detector sides i guess to identify where some clones come from...
@@ -852,6 +856,15 @@ def evaluate_events(
 def mse(network, tracks):
     true_network = Hopfield(modules=network.m, parameters=network.p, tracks=tracks)
     return ((network.N - true_network.N) ** 2).mean(axis=None)
+
+
+def save_experiment(exp_name, exp_num, desc, p, event_file_name, nr_events, bootstraps_method="mean"):
+    f = open("experiments/"+exp_name+".txt", 'a')
+    f.write(f"Experiment {exp_num}\n\n{desc}\nParameters: {p}\n")
+    f.close()
+    evaluate_events(project_root + event_file_name, p, nr_events, False, bootstraps_method, "experiments/"+exp_name+".txt")
+    f = open("experiments/"+exp_name+".txt", 'a')
+
 
 
 if __name__ == "__main__":
@@ -880,7 +893,7 @@ if __name__ == "__main__":
         "THRESHOLD": 0.3,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
-        "bootstrap_iters": 3,
+        "bootstrap_iters": 1,
         ###### BIFURC REMOVAL #####
         "smart": True,
         "only_weight": False,
@@ -897,12 +910,14 @@ if __name__ == "__main__":
     #     num_modules=10, plot_events=True, num_tracks=20, save_to_file="test.txt"
     # )
 
-    evaluate_events(
-        project_root + "/events/small_dataset/velo_event_",
-        parameters,
-        nr_events=1,
-        plot_event=True,
-    )
+    save_experiment("test_1", 1, "Initial Test", parameters, "/events/minibias/velo_event_", 1, "mean")
+
+    # evaluate_events(
+    #     project_root + "/events/small_dataset/velo_event_",
+    #     parameters,
+    #     nr_events=1,
+    #     plot_event=True,
+    # )
     exit()
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
