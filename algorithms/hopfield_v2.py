@@ -369,7 +369,7 @@ class Hopfield:
             "[HOPFIELD] converged network by %s after %i mins %.2f seconds; (energy: %.2f)"
             % (method, end_time // 60, end_time % 60, np.mean(energy_list))
         )
-        return sum(iter_list)/len(iter_list)
+        return sum(iter_list) / len(iter_list)
 
     def tracks(self):
         # What the papers say:  The answer is given by the final set of active Neurons
@@ -809,8 +809,11 @@ def evaluate_events(
     iter_even = 1
     iter_odd = 1
 
-    for i in range(nr_events):
-
+    all_events = [i for i in range(995)]
+    # random.seed(40)
+    random.shuffle(all_events)
+    for j in range(nr_events):
+        i = all_events[j]
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
         json_data_event, modules = load_event(
             file_name + str(i) + ".json", plot_event=True
@@ -826,10 +829,12 @@ def evaluate_events(
         )
 
         iter_even = even_hopfield.bootstrap_converge(
-            bootstraps=parameters["bootstrap_iters"], method=parameters['bootstrap_method']
+            bootstraps=parameters["bootstrap_iters"],
+            method=parameters["bootstrap_method"],
         )
         iter_odd = odd_hopfield.bootstrap_converge(
-            bootstraps=parameters["bootstrap_iters"], method=parameters['bootstrap_method']
+            bootstraps=parameters["bootstrap_iters"],
+            method=parameters["bootstrap_method"],
         )
 
         start_time = time.time()
@@ -854,7 +859,7 @@ def evaluate_events(
     start_time = time.time()
     if output_file:
         print(output_file)
-        sys.stdout = open(output_file, 'a')
+        sys.stdout = open(output_file, "a")
         print(f"Average number of iterations per convergence: {(iter_even+iter_odd)/2}")
         vl.validate_print(json_data_all_events, all_tracks, return_data=True)
         print("____________________")
@@ -875,12 +880,19 @@ def mse(network, tracks):
 
 
 def save_experiment(exp_name, exp_num, desc, p, event_file_name, nr_events):
-    f = open("experiments/"+exp_name+".txt", 'a')
-    f.write(f"Experiment {exp_num}\n\n{desc}\nNumber of events: {nr_events}\nParameters: {p}\n")
+    f = open(project_root + "/algorithms/experiments/" + exp_name + ".txt", "a")
+    f.write(
+        f"Experiment {exp_num}\n\n{desc}\nNumber of events: {nr_events}\nParameters: {p}\n"
+    )
     f.close()
-    evaluate_events(project_root + event_file_name, p, nr_events, False,  "experiments/"+exp_name+".txt")
-    f = open("experiments/"+exp_name+".txt", 'a')
-
+    evaluate_events(
+        project_root + event_file_name,
+        p,
+        nr_events,
+        False,
+        "/experiments/" + exp_name + ".txt",
+    )
+    f = open(project_root + "/algorithms/experiments/" + exp_name + ".txt", "a")
 
 
 if __name__ == "__main__":
@@ -922,20 +934,34 @@ if __name__ == "__main__":
     ###########
     #######################################################
 
+    save_experiment(
+        "bootstrap_method",
+        2,
+        "Below Mean",
+        parameters,
+        "/events/minibias/velo_event_",
+        1,
+    )
+    exit()
+
+
+
+
+
+
+
+
     # modules, tracks = load_instance("test.txt", plot_events=True)
     # modules, tracks = prepare_instance(
     #     num_modules=10, plot_events=True, num_tracks=20, save_to_file="test.txt"
     # )
-
-    save_experiment("bootstrap_method", 2, "Below Mean", parameters, "/events/minibias/velo_event_", 1)
-
     # evaluate_events(
     #     project_root + "/events/small_dataset/velo_event_",
     #     parameters,
     #     nr_events=1,
     #     plot_event=True,
     # )
-    exit()
+
     my_instance = Hopfield(modules=modules, parameters=parameters)
     # for i in range(len(my_instance.W)):
     #     sns.heatmap(my_instance.W[i])
