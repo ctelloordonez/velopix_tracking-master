@@ -816,7 +816,7 @@ def evaluate_events(
         i = all_events[j]
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
         json_data_event, modules = load_event(
-            file_name + str(i) + ".json", plot_event=True
+            file_name + str(i) + ".json", plot_event=False
         )
 
         start_time = time.time()
@@ -890,7 +890,7 @@ def save_experiment(exp_name, exp_num, desc, p, event_file_name, nr_events):
         p,
         nr_events,
         False,
-        "/experiments/" + exp_name + ".txt",
+        project_root + "/algorithms/experiments/" + exp_name + ".txt",
     )
     f = open(project_root + "/algorithms/experiments/" + exp_name + ".txt", "a")
 
@@ -940,16 +940,9 @@ if __name__ == "__main__":
         "Below Mean",
         parameters,
         "/events/minibias/velo_event_",
-        1,
+        10,
     )
     exit()
-
-
-
-
-
-
-
 
     # modules, tracks = load_instance("test.txt", plot_events=True)
     # modules, tracks = prepare_instance(
