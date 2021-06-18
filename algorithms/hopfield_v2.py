@@ -812,8 +812,11 @@ def evaluate_events(
     all_events = [i for i in range(995)]
     # random.seed(40)
     random.shuffle(all_events)
-    for j in range(nr_events):
+    count = 0
+    j = 0
+    while count < nr_events:
         i = all_events[j]
+        j += 1
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
         json_data_event, modules = load_event(
             file_name + str(i) + ".json", plot_event=False
@@ -828,6 +831,10 @@ def evaluate_events(
             % (end_time // 60, end_time % 60)
         )
 
+        if max(odd_hopfield.max_neurons, even_hopfield.max_neurons) > 2200:
+            continue
+
+        count = count + 1
         iter_even = even_hopfield.bootstrap_converge(
             bootstraps=parameters["bootstrap_iters"],
             method=parameters["bootstrap_method"],
