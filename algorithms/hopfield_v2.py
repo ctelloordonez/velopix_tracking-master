@@ -818,6 +818,9 @@ def evaluate_events(
         i = all_events[j]
         j += 1
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
+        size = os.path.getsize(file_name + str(i) + ".json")
+        if size > 100000:
+            continue
         json_data_event, modules = load_event(
             file_name + str(i) + ".json", plot_event=False
         )
@@ -929,7 +932,7 @@ if __name__ == "__main__":
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
         "bootstrap_iters": 10,
-        "bootstrap_method": "below_median",
+        "bootstrap_method": "below_mean",
         ###### BIFURC REMOVAL #####
         "smart": True,
         "only_weight": False,
@@ -942,9 +945,9 @@ if __name__ == "__main__":
     #######################################################
 
     save_experiment(
-        "bootstrap_method",
-        2,
-        "Below Mean",
+        "constants",
+        1,
+        "Both Constants Active with Below Mean Averaging",
         parameters,
         "/events/minibias/velo_event_",
         10,
