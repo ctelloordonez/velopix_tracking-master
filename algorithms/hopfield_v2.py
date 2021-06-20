@@ -917,7 +917,7 @@ if __name__ == "__main__":
         "GAMMA": 10,
         "narrowness": 200,
         "constant_factor": 0.9,
-        "monotone_constant_factor": 0.9,
+        "monotone_constant_factor": 0,
         #### UPDATE ###
         "T": 5,  # try to experiment with these rather
         "B": 0.2,  # try to experiment with these rather
@@ -946,8 +946,8 @@ if __name__ == "__main__":
 
     save_experiment(
         "constants",
-        1,
-        "Both Constants Active with Below Mean Averaging",
+        2,
+        "No Monotone Constant Active with Below Mean Averaging",
         parameters,
         "/events/minibias/velo_event_",
         10,

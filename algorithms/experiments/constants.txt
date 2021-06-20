@@ -3,3 +3,31 @@ Experiment 1
 Both Constants Active with Below Mean Averaging
 Number of events: 10
 Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0.9, 'monotone_constant_factor': 0.9, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x000001D21123F0D0>, 'T_decay': <function <lambda> at 0x000001D21123F160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
+Experiment 1
+
+Both Constants Active with Below Mean Averaging
+Number of events: 10
+Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0.9, 'monotone_constant_factor': 0.9, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x0000023551B100D0>, 'T_decay': <function <lambda> at 0x0000023551B10160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
+Average number of iterations per convergence: 13.55
+1237 tracks including      127 ghosts ( 10.3%). Event average   9.7%
+              velo :      937 from     1365 ( 68.6%,  72.9%)       66 clones (  7.04%), purity: ( 97.16%,  97.19%),  hitEff: ( 85.66%,  84.54%)
+              long :      330 from      376 ( 87.8%,  90.3%)       45 clones ( 13.64%), purity: ( 97.87%,  98.09%),  hitEff: ( 81.81%,  79.67%)
+         long>5GeV :      205 from      231 ( 88.7%,  92.5%)       20 clones (  9.76%), purity: ( 98.14%,  98.45%),  hitEff: ( 85.44%,  83.14%)
+      long_strange :       19 from       24 ( 79.2%,  80.8%)        3 clones ( 15.79%), purity: ( 97.84%,  96.09%),  hitEff: ( 79.34%,  76.46%)
+ long_strange>5GeV :        9 from       10 ( 90.0%,  93.2%)        3 clones ( 33.33%), purity: ( 97.42%,  96.10%),  hitEff: ( 73.89%,  68.79%)
+        long_fromb :        3 from        5 ( 60.0%,  60.0%)        0 clones (  0.00%), purity: ( 96.30%,  96.30%),  hitEff: ( 91.67%,  91.67%)
+   long_fromb>5GeV :        2 from        4 ( 50.0%,  50.0%)        0 clones (  0.00%), purity: ( 94.44%,  94.44%),  hitEff: ( 87.50%,  87.50%)
+____________________
+Experiment 2
+
+No Monotone Constant Active with Below Mean Averaging
+Number of events: 10
+Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0.9, 'monotone_constant_factor': 0, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x000002500C8510D0>, 'T_decay': <function <lambda> at 0x000002500C851160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
+Average number of iterations per convergence: 12.1
+1156 tracks including      282 ghosts ( 24.4%). Event average  21.6%
+              velo :      739 from     1493 ( 49.5%,  51.6%)       70 clones (  9.47%), purity: ( 96.53%,  96.64%),  hitEff: ( 77.58%,  76.37%)
+              long :      317 from      418 ( 75.8%,  77.5%)       47 clones ( 14.83%), purity: ( 96.98%,  97.08%),  hitEff: ( 75.30%,  72.14%)
+         long>5GeV :      199 from      258 ( 77.1%,  77.9%)       35 clones ( 17.59%), purity: ( 97.10%,  97.27%),  hitEff: ( 72.67%,  68.84%)
+      long_strange :        9 from       16 ( 56.2%,  60.4%)        1 clones ( 11.11%), purity: ( 95.00%,  97.22%),  hitEff: ( 75.71%,  68.28%)
+ long_strange>5GeV :        3 from        8 ( 37.5%,  32.3%)        0 clones (  0.00%), purity: (100.00%, 100.00%),  hitEff: ( 80.83%,  80.83%)
+____________________
