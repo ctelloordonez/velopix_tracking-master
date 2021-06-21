@@ -824,6 +824,21 @@ def evaluate_events(
         json_data_event, modules = load_event(
             file_name + str(i) + ".json", plot_event=False
         )
+        max_neurons = 0
+        last = 0
+        for m in modules[0]:
+            n_hits = len(m.hits())
+            if last * n_hits > max_neurons:
+                max_neurons = last * n_hits
+            last = n_hits
+        last = 0
+        for m in modules[1]:
+            n_hits = len(m.hits())
+            if last * n_hits > max_neurons:
+                max_neurons = last * n_hits
+            last = n_hits
+        if max_neurons > 2200:
+            continue
 
         start_time = time.time()
         even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
@@ -833,9 +848,6 @@ def evaluate_events(
             "[INFO] Hopfield Networks initialized in %i mins %.2f seconds"
             % (end_time // 60, end_time % 60)
         )
-
-        if max(odd_hopfield.max_neurons, even_hopfield.max_neurons) > 2200:
-            continue
 
         count = count + 1
         iter_even = even_hopfield.bootstrap_converge(
@@ -920,8 +932,8 @@ if __name__ == "__main__":
         "monotone_constant_factor": 0,
         #### UPDATE ###
         "T": 5,  # try to experiment with these rather
-        "B": 0.2,  # try to experiment with these rather
-        "B_decay": lambda t: max(0.1, t * 0.04),  # try to remove these
+        "B": 5,  # try to experiment with these rather
+        "B_decay": lambda t: max(1e-8, t * 0.04),  # try to remove these
         "T_decay": lambda t: max(1e-8, t * 0.01),  # try to remove these
         "decay_off": False,  # using this
         "randomized_updates": True,
