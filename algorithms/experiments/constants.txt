@@ -2,11 +2,6 @@ Experiment 1
 
 Both Constants Active with Below Mean Averaging
 Number of events: 10
-Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0.9, 'monotone_constant_factor': 0.9, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x000001D21123F0D0>, 'T_decay': <function <lambda> at 0x000001D21123F160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
-Experiment 1
-
-Both Constants Active with Below Mean Averaging
-Number of events: 10
 Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0.9, 'monotone_constant_factor': 0.9, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x0000023551B100D0>, 'T_decay': <function <lambda> at 0x0000023551B10160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
 Average number of iterations per convergence: 13.55
 1237 tracks including      127 ghosts ( 10.3%). Event average   9.7%
@@ -31,3 +26,26 @@ Average number of iterations per convergence: 12.1
       long_strange :        9 from       16 ( 56.2%,  60.4%)        1 clones ( 11.11%), purity: ( 95.00%,  97.22%),  hitEff: ( 75.71%,  68.28%)
  long_strange>5GeV :        3 from        8 ( 37.5%,  32.3%)        0 clones (  0.00%), purity: (100.00%, 100.00%),  hitEff: ( 80.83%,  80.83%)
 ____________________
+Experiment 3
+
+No Normal Constant Active with Below Mean Averaging
+Number of events: 10
+Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0, 'monotone_constant_factor': 0.9, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x000001E4A7BA00D0>, 'T_decay': <function <lambda> at 0x000001E4A7BA0160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
+Average number of iterations per convergence: 59.45
+1288 tracks including      324 ghosts ( 25.2%). Event average  23.4%
+              velo :      768 from     1360 ( 56.5%,  59.3%)      121 clones ( 15.76%), purity: ( 95.77%,  95.79%),  hitEff: ( 64.63%,  63.02%)
+              long :      268 from      356 ( 75.3%,  73.7%)       81 clones ( 30.22%), purity: ( 95.89%,  95.97%),  hitEff: ( 53.47%,  50.83%)
+         long>5GeV :      163 from      216 ( 75.5%,  73.2%)       51 clones ( 31.29%), purity: ( 96.80%,  96.85%),  hitEff: ( 52.89%,  48.60%)
+      long_strange :        5 from       13 ( 38.5%,  50.8%)        1 clones ( 20.00%), purity: ( 94.44%,  93.33%),  hitEff: ( 48.12%,  45.93%)
+ long_strange>5GeV :        3 from        8 ( 37.5%,  31.5%)        1 clones ( 33.33%), purity: (100.00%, 100.00%),  hitEff: ( 42.50%,  40.62%)
+____________________
+Experiment 4
+
+No Constants Active with Below Mean Averaging
+Number of events: 10
+Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0, 'monotone_constant_factor': 0, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x00000170F82D00D0>, 'T_decay': <function <lambda> at 0x00000170F82D0160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}
+Experiment 4
+
+No Constants Active with Below Mean Averaging
+Number of events: 5
+Parameters: {'random_neuron_init': True, 'binary_states': False, 'ALPHA': 1, 'BETA': 10, 'GAMMA': 10, 'narrowness': 200, 'constant_factor': 0, 'monotone_constant_factor': 0, 'T': 5, 'B': 0.2, 'B_decay': <function <lambda> at 0x000001650BA000D0>, 'T_decay': <function <lambda> at 0x000001650BA00160>, 'decay_off': False, 'randomized_updates': True, 'fully_randomized_updates': False, 'maxActivation': True, 'THRESHOLD': 0.3, 'convergence_threshold': 5e-08, 'bootstrap_iters': 10, 'bootstrap_method': 'below_mean', 'smart': True, 'only_weight': False, 'max_activation': False, 'pruning_tr': 0.5}

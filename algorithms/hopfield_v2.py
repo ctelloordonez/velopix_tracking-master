@@ -810,7 +810,7 @@ def evaluate_events(
     iter_odd = 1
 
     all_events = [i for i in range(995)]
-    # random.seed(40)
+    random.seed(40)
     random.shuffle(all_events)
     count = 0
     j = 0
@@ -916,7 +916,7 @@ if __name__ == "__main__":
         "BETA": 10,
         "GAMMA": 10,
         "narrowness": 200,
-        "constant_factor": 0.9,
+        "constant_factor": 0,
         "monotone_constant_factor": 0,
         #### UPDATE ###
         "T": 5,  # try to experiment with these rather
@@ -946,11 +946,11 @@ if __name__ == "__main__":
 
     save_experiment(
         "constants",
-        2,
-        "No Monotone Constant Active with Below Mean Averaging",
+        4,
+        "No Constants Active with Below Mean Averaging",
         parameters,
         "/events/minibias/velo_event_",
-        10,
+        5,
     )
     exit()
 
