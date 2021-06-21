@@ -6,8 +6,8 @@ from event_model import event_model as em
 class SearchByPhi:
     def __init__(self, event):
         self.hits = sort_by_phi(event.hits) # sort hits by phi
-        self.acceptance = 0.01
-        self.min_track_length = 2
+        self.acceptance = 0.015
+        self.min_track_length = 3
 
     def solve(self):
         tracks = [] # list of tracks found

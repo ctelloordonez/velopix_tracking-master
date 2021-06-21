@@ -164,9 +164,12 @@ def plot_density_histogram(data, title="Histogram", xlabel="Data", ylabel="", sa
         plt.show()
 
 
-def plot_histogram(data, title="Histogram", xlabel="Data", ylabel="", safe_to_file=False):
+def plot_histogram(data, bins=0, title="Histogram", xlabel="Data", ylabel="", safe_to_file=False):
     x = np.array(data)
-    plt.hist(x, get_bins(x), label="Data")
+    if bins <= 0:
+        plt.hist(x, get_bins(x), label="Data")
+    else:
+        plt.hist(x, bins, label="Data")
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
@@ -339,30 +342,100 @@ def track_origin_analysis():
 
     for p in percentages:
         print(p)
+
+
+def track_origins():
+    origins = []
+
+    for (dirpath, dirnames, filenames) in os.walk("../events/" + data_set):
+        for i, filename in enumerate(filenames):
+            # Get an event
+            f = open(os.path.realpath(os.path.join(dirpath, filename)))
+            json_data = json.loads(f.read())
+            event = em.event(json_data)
+            f.close()
+            print(filename)
+
+            for s_number in range(0, event.number_of_modules):
+                if len(event.modules[s_number].hits()) > 0:
+                    event.modules[s_number].z = event.modules[s_number].hits()[0].z
+
+            event_tracks = tracks_from_data(json_data, only_reconstructible=True)
+
+            for track in event_tracks:
+                closest_to_origin = track.hits[0]
+                for hit in track.hits:
+                    if math.sqrt(hit.x ** 2 + hit.y ** 2) < math.sqrt(closest_to_origin.x ** 2 + closest_to_origin.y ** 2):
+                        closest_to_origin = hit
+                closest_to_origin = [h for h in event.hits if h == closest_to_origin][0]
+                origins.append(closest_to_origin)
+            # print(len(origins) == len(event_tracks))
+    return origins
+
+
 # ------------------------------- DATA ANALYSIS --------------------------------------------
 
 
 if __name__ == '__main__':
     data_set = "minibias"
+    origins = track_origins()
+    print(len(origins))
 
-    distribution_of_noise(safe_to_file=True)
-    noise_histogram(safe_to_file=True)
-    noise_histogram(density=True, safe_to_file=True)
+    fig = plt.figure()
+    ax = plt.axes()
+    plt.scatter([h.x for h in origins], [h.y for h in origins])
+    plt.xlabel("X")
+    plt.ylabel("Y", rotation='horizontal')
+    plt.show()
 
-    distribution_of_tracks(safe_to_file=True)
-    tracks_histogram(safe_to_file=True)
-    tracks_histogram(density=True, safe_to_file=True)
+    origins_modules = [h.module_number for h in origins]
+    plot_histogram(origins_modules, bins=52, xlabel="Module", ylabel="#hits", safe_to_file=False)
 
-    tracks_by_noise(safe_to_file=True)
+    k = 40
+    bins = [[0 for i in range(k)] for j in range(k)]    # bins[0][1] = 1
+    for hit in origins:
+        offset = 40
+        x_value = hit.x + offset
+        y_value = hit.y + offset
+        space_range = 80
+        for by in range(len(bins)):
+            if by * (space_range / k) < y_value <= (by + 1) * (space_range / k):
+                for bx in range(len(bins[by])):
+                    if bx * (space_range / k) < x_value <= (bx + 1) * (space_range / k):
+                        bins[by][bx] += 1
 
-    data_set = "bsphiphi"
+    # for by in range(len(bins)):
+    #     for bx in range(len(bins[by])):
+    #         bins[by][bx] = bins[by][bx] / len(origins) * 100
 
-    distribution_of_noise(safe_to_file=True)
-    noise_histogram(safe_to_file=True)
-    noise_histogram(density=True, safe_to_file=True)
+    plt.imshow(bins, interpolation='none', extent=[-40, 40, -40, 40])
+    plt.colorbar()
+    plt.xlabel("X")
+    plt.ylabel("Y", rotation='horizontal')
+    plt.show()
 
-    distribution_of_tracks(safe_to_file=True)
-    tracks_histogram(safe_to_file=True)
-    tracks_histogram(density=True, safe_to_file=True)
+    origins_polar_distance = [math.sqrt(hit.x ** 2 + hit.y ** 2) for hit in origins]
+    mu, variance, sigma = data_distribution(origins_polar_distance)
+    plot_distribution(mu=mu, sigma=sigma, title='Polar distance distribution', safe_to_file=False)
 
-    tracks_by_noise(safe_to_file=True)
+    # distribution_of_noise(safe_to_file=True)
+    # noise_histogram(safe_to_file=True)
+    # noise_histogram(density=True, safe_to_file=True)
+    #
+    # distribution_of_tracks(safe_to_file=True)
+    # tracks_histogram(safe_to_file=True)
+    # tracks_histogram(density=True, safe_to_file=True)
+    #
+    # tracks_by_noise(safe_to_file=True)
+    #
+    # data_set = "bsphiphi"
+    #
+    # distribution_of_noise(safe_to_file=True)
+    # noise_histogram(safe_to_file=True)
+    # noise_histogram(density=True, safe_to_file=True)
+    #
+    # distribution_of_tracks(safe_to_file=True)
+    # tracks_histogram(safe_to_file=True)
+    # tracks_histogram(density=True, safe_to_file=True)
+    #
+    # tracks_by_noise(safe_to_file=True)
