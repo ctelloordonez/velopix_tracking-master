@@ -11,7 +11,14 @@ class TemplateMatching:
         '********parameters***********'
         # numberOfTemplates =  the number of parts we split the 2 pi range of the polar angle into.
         numberOfTemplates = 700 # 900 does best on small data set
+
+        #For method 1,2,3: use this template array and comment next out
+        #templateArray = np.zeros((numberOfTemplates,52,1)) # Array to store hit indexes in for template matching
+
+        #For method 4,5 use this template array and comment the above out
         templateArray = np.zeros((numberOfTemplates,52,1)) # Array to store hit indexes in for template matching
+
+
         '*****************************'
         # In this loop, we give each hit its place in the template matching array
         for i in range(len(self.hits)):
@@ -23,12 +30,16 @@ class TemplateMatching:
            if(indexInArray > numberOfTemplates-1): # floats can go just over the last index in the array
                indexInArray = numberOfTemplates-1
 
+
+
             # we add the hit index +1 in the array at the spot consistent with its polar angle and module number
            if templateArray[indexInArray][self.hits[i].module_number-1][0]==0:
             templateArray[indexInArray][self.hits[i].module_number-1][0] = i+1 #h.id +1 because we start with an array of zero's
-           #elif templateArray[indexInArray][self.hits[i].module_number-1][1]==0:
-            #templateArray[indexInArray][
-            #       self.hits[i].module_number - 1][1] = i + 1  # h.id +1 because we start with an array of zero's
+
+           #comment the elif below out for method 1,2,3 (this is for filling in the next instances)
+           elif templateArray[indexInArray][self.hits[i].module_number-1][1]==0:
+            templateArray[indexInArray][
+                   self.hits[i].module_number - 1][1] = i + 1  # h.id +1 because we start with an array of zero's
 
           # else:
           #  templateArray[indexInArray][self.hits[i].module_number - 1][2] = i + 1
@@ -227,7 +238,7 @@ def checkTemplate2(templateArray,numberOfTemplates,hits):
     return tracks
 
 
-
+#This monotonicity check function is used only for method 3
 def MonotonicityCheckEven1Instance(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
     if (countEven <= 1):
         index = int(templateArray[t, k] - 1)
@@ -256,7 +267,7 @@ def MonotonicityCheckEven1Instance(countEven,index,hitIDsOdd,hits,templateArray,
             templateArray[t, k] = 0
 
     return (countEven, hitIDsOdd,templateArray,tracks,hitIDsEven)
-
+#This monotonicity check function is used only for method 3
 def MonotonicityCheckOdd1Instance(countOdd,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
     if (countOdd <= 1):
         countOdd += 1
@@ -285,6 +296,8 @@ def MonotonicityCheckOdd1Instance(countOdd,index,hitIDsOdd,hits,templateArray,tr
             templateArray[t, k] = 0
 
     return((countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven))
+
+
 # Template matching with monotonicity check and multiple angle sections to check
 def checkTemplate3(templateArray, numberOfTemplates, hits):
     tracks = []
@@ -355,6 +368,7 @@ def checkTemplate3(templateArray, numberOfTemplates, hits):
 
     return tracks
 
+#This monotonicity check function is used only for method 4 and 5
 def MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
     if (countEven <= 1):
         countEven += 1
@@ -406,6 +420,8 @@ def MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hi
             templateArray[t, k][1] = 0
     return (countEven, hitIDsOdd,templateArray,tracks,hitIDsEven)
 
+
+#This monotonicity check function is used only for method 4 and 5
 def MonotonicityCheckOdd(countOdd,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
     if (countOdd <= 1):
         countOdd += 1
@@ -526,6 +542,7 @@ def checkTemplate4(templateArray, numberOfTemplates, hits):
 
     return tracks
 
+#this method checks 4 neighbours and 2 instances
 def checkTemplate5(templateArray, numberOfTemplates, hits):
     tracks = []
     for t in range(numberOfTemplates):
