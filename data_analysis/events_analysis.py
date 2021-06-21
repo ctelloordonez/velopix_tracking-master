@@ -410,6 +410,8 @@ if __name__ == '__main__':
 
     plt.imshow(bins, interpolation='none', extent=[-40, 40, -40, 40])
     plt.colorbar()
+    plt.xlabel("X")
+    plt.ylabel("Y", rotation='horizontal')
     plt.show()
 
     origins_polar_distance = [math.sqrt(hit.x ** 2 + hit.y ** 2) for hit in origins]

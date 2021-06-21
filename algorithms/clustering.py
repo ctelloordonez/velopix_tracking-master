@@ -33,9 +33,10 @@ class Clustering:
     #     return self.tracks_from_clusterer(clusterer)
 
     def solve_affinity_propagation(self):
-        distance_matrix = compute_distances(self.hits)
-        clusterer = AffinityPropagation(affinity='precomputed', random_state=None) # affinity='precomputed'
-        clusterer.fit_predict(distance_matrix)
+        # distance_matrix = compute_distances(self.hits)
+        # clusterer = AffinityPropagation(affinity='precomputed', random_state=None) # affinity='precomputed'
+        # clusterer.fit_predict(distance_matrix)
+        clusterer = AffinityPropagation(affinity='euclidean').fit(self.hits_a)
 
         return self.tracks_from_clusterer(clusterer)
 
@@ -47,7 +48,7 @@ class Clustering:
                 if clusterer.labels_[k] == t:
                     currentTrack.append(self.hits[k])
             tracks.append(em.track(currentTrack))
-
+        print(len(tracks))
         return tracks
 
 
@@ -63,7 +64,7 @@ def compute_distances(hits):
     distanceMatrix = np.empty((len(hits), len(hits)))
     for i in range(len(hits)):
         for j in range(i, len(hits)):
-            distanceMatrix[i][j] = distance(hits[i], hits[j])
+            distanceMatrix[i][j] = distance8(hits[i], hits[j])
             distanceMatrix[j][i] = distanceMatrix[i][j]
     return distanceMatrix
 
@@ -130,10 +131,12 @@ def distance7(hit1,hit2):
     if hit1.module_number ==  hit2.module_number:
         return 100000
     elif (hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number:
+        polar_distance_hit1 = math.sqrt(hit1.x ** 2 + hit1.y ** 2)
+        polar_distance_hit2 = math.sqrt(hit2.x ** 2 + hit2.y ** 2)
         if(hit1.module_number >  hit2.module_number):
-            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit1)-polarDistance(hit2)+1e-7)
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polar_distance_hit1-polar_distance_hit2+1e-7)
         else:
-            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit2)-polarDistance(hit1)+1e-7)
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polar_distance_hit2-polar_distance_hit1+1e-7)
     else:
         return 10000
 
@@ -142,9 +145,11 @@ def distance8(hit1,hit2):
     if hit1.module_number ==  hit2.module_number:
         return 100000
     elif (hit1.module_number % 2) == (hit2.module_number % 2) and hit1.module_number !=  hit2.module_number:
+        polar_distance_hit1 = math.sqrt(hit1.x ** 2 + hit1.y ** 2)
+        polar_distance_hit2 = math.sqrt(hit2.x ** 2 + hit2.y ** 2)
         if(hit1.module_number >  hit2.module_number):
-            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit1)-polarDistance(hit2)+1e-7)
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polar_distance_hit1-polar_distance_hit2+1e-7)
         else:
-            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polarDistance(hit2)-polarDistance(hit1)+1e-7)
+            return 500*(abs(math.atan2(hit1.y, hit1.x) - math.atan2(hit2.y, hit2.x)))/(polar_distance_hit2-polar_distance_hit1+1e-7)
     else:
         return 10000
