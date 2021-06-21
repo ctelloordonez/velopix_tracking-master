@@ -22,7 +22,7 @@ track_following = track_following()
 
 # Iterate all events
 executionTime = 0.0
-for (dirpath, dirnames, filenames) in os.walk("C:/Users/maxim/Documents/GitHub/velopix_tracking-master/events/minibias"):
+for (dirpath, dirnames, filenames) in os.walk("C:/Users/maxim/Documents/GitHub/velopix_tracking-master/events/bsphiphi"):
     for i, filename in enumerate(filenames):
         # Get an event
         f = open(os.path.realpath(os.path.join(dirpath, filename)))
