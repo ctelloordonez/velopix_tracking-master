@@ -636,15 +636,16 @@ class Hopfield:
                             # the other bifurcation in the previous iteration
                             c0 = self.hit_counts[idx - 1]
                             activation_mask_2 = (
-                                self.N[idx, : c0 * c1].reshape(c0, c1)[:, l_hit] > tr
+                                self.N[idx - 1, : c0 * c1].reshape(c0, c1)[:, l_hit]
+                                > tr
                             )
                             if sum(activation_mask_2) > 0:
                                 for i in range(
-                                    c0
+                                    c0  # this was c0...
                                 ):  # loop over all nerons affected by bifurc
                                     if activation_mask_2[i]:
                                         affected_neurons_2 = affected_neurons_2 + [
-                                            c0 * i + l_hit
+                                            c1 * i + l_hit
                                         ]
 
                                 if len(affected_neurons_2) > 0:
@@ -819,8 +820,6 @@ def evaluate_events(
         j += 1
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
         size = os.path.getsize(file_name + str(i) + ".json")
-        if size > 100000:
-            continue
         json_data_event, modules = load_event(
             file_name + str(i) + ".json", plot_event=False
         )
@@ -840,6 +839,7 @@ def evaluate_events(
         if max_neurons > 2200:
             continue
 
+        print(f"\nstarting instance {count} out of {nr_events}\n")
         start_time = time.time()
         even_hopfield = Hopfield(modules=modules[0], parameters=parameters)
         odd_hopfield = Hopfield(modules=modules[1], parameters=parameters)
@@ -940,7 +940,7 @@ if __name__ == "__main__":
         "fully_randomized_updates": False,
         #### THRESHOLD ###
         "maxActivation": True,
-        "THRESHOLD": 0.005,
+        "THRESHOLD": 0.2,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
         "bootstrap_iters": 10,
@@ -951,14 +951,14 @@ if __name__ == "__main__":
         "max_activation": False,
         ###### Track prunning #######
         # here we could set the threshold
-        "pruning_tr": 0.005,
+        "pruning_tr": 0.01,
     }
     ###########
     ########################################################
     save_experiment(
         "final_algorithm_assesment",
         2,
-        "best configuration",
+        "best configuration prun_tr 0.01, ",
         parameters,
         "/events/minibias/velo_event_",
         100,
