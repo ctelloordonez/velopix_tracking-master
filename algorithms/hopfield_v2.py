@@ -818,9 +818,9 @@ def evaluate_events(
         i = all_events[j]
         j += 1
         print("[INFO] Evaluate Event: %s" % file_name + str(i))
-        size = os.path.getsize(file_name + str(i) + ".json")
-        if size > 100000:
-            continue
+        # size = os.path.getsize(file_name + str(i) + ".json")
+        # if size > 100000:
+        #     continue
         json_data_event, modules = load_event(
             file_name + str(i) + ".json", plot_event=False
         )
@@ -849,34 +849,38 @@ def evaluate_events(
             % (end_time // 60, end_time % 60)
         )
 
-        count = count + 1
-        iter_even = even_hopfield.bootstrap_converge(
-            bootstraps=parameters["bootstrap_iters"],
-            method=parameters["bootstrap_method"],
-        )
-        iter_odd = odd_hopfield.bootstrap_converge(
-            bootstraps=parameters["bootstrap_iters"],
-            method=parameters["bootstrap_method"],
-        )
+        try:
+            iter_even = even_hopfield.bootstrap_converge(
+                bootstraps=parameters["bootstrap_iters"],
+                method=parameters["bootstrap_method"],
+            )
+            iter_odd = odd_hopfield.bootstrap_converge(
+                bootstraps=parameters["bootstrap_iters"],
+                method=parameters["bootstrap_method"],
+            )
 
-        start_time = time.time()
-        even_hopfield.mark_bifurcation()
-        odd_hopfield.mark_bifurcation()
-        even_tracks = even_hopfield.full_tracks()
-        odd_tracks = odd_hopfield.full_tracks()
-        event_tracks = even_tracks + odd_tracks
-        end_time = time.time() - start_time
-        print(
-            "[INFO] tracks extracted in %i mins %.2f seconds"
-            % (end_time // 60, end_time % 60)
-        )
+            start_time = time.time()
+            even_hopfield.mark_bifurcation()
+            odd_hopfield.mark_bifurcation()
+            even_tracks = even_hopfield.full_tracks()
+            odd_tracks = odd_hopfield.full_tracks()
+            event_tracks = even_tracks + odd_tracks
+            end_time = time.time() - start_time
+            print(
+                "[INFO] tracks extracted in %i mins %.2f seconds"
+                % (end_time // 60, end_time % 60)
+            )
 
-        json_data_all_events.append(json_data_event)
-        all_tracks.append(event_tracks)
+            json_data_all_events.append(json_data_event)
+            all_tracks.append(event_tracks)
 
-        if plot_event:
-            even_hopfield.plot_network_results()
-            odd_hopfield.plot_network_results()
+            if plot_event:
+                even_hopfield.plot_network_results()
+                odd_hopfield.plot_network_results()
+
+            count = count + 1
+        except:
+            continue
 
     start_time = time.time()
     if output_file:
@@ -940,7 +944,7 @@ if __name__ == "__main__":
         "fully_randomized_updates": False,
         #### THRESHOLD ###
         "maxActivation": True,
-        "THRESHOLD": 0.005,
+        "THRESHOLD": 0.2,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
         "bootstrap_iters": 10,
@@ -951,14 +955,14 @@ if __name__ == "__main__":
         "max_activation": False,
         ###### Track prunning #######
         # here we could set the threshold
-        "pruning_tr": 0.005,
+        "pruning_tr": 0.05,
     }
     ###########
     ########################################################
     save_experiment(
         "final_algorithm_assessment",
-        1,
-        "best configuration",
+        "Final",
+        "Best Configuration Large 100 event Test with 0.05 Pruning Threshold",
         parameters,
         "/events/minibias/velo_event_",
         100,
