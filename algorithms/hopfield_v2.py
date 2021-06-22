@@ -508,8 +508,8 @@ class Hopfield:
             cand = [track[0], track[1]]
             cand_info = info[0]
             for idx in range(1, num_hits - 1):
-                if abs(cand_info[3] - info[idx][3]) < tr:
-                # if sum(abs(cand_info - info[idx])) < tr:
+                # if abs(cand_info[3] - info[idx][3]) < tr:
+                if sum(abs(cand_info - info[idx])) < tr:
                     cand = cand + [track[idx + 1]]
                 else:
                     if len(cand) > 2:
@@ -957,7 +957,7 @@ if __name__ == "__main__":
     ########################################################
     save_experiment(
         "final_algorithm_assessment",
-        2,
+        1,
         "best configuration",
         parameters,
         "/events/minibias/velo_event_",
