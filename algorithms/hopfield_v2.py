@@ -508,8 +508,8 @@ class Hopfield:
             cand = [track[0], track[1]]
             cand_info = info[0]
             for idx in range(1, num_hits - 1):
-                # if sum(abs(cand_info[3] - info[idx][3])) < tr:
-                if sum(abs(cand_info - info[idx])) < tr:
+                if abs(cand_info[3] - info[idx][3]) < tr:
+                # if sum(abs(cand_info - info[idx])) < tr:
                     cand = cand + [track[idx + 1]]
                 else:
                     if len(cand) > 2:
@@ -928,8 +928,8 @@ if __name__ == "__main__":
         "BETA": 10,
         "GAMMA": 10,
         "narrowness": 200,
-        "constant_factor": 0,
-        "monotone_constant_factor": 0,
+        "constant_factor": 0.9,
+        "monotone_constant_factor": 0.9,
         #### UPDATE ###
         "T": 5,  # try to experiment with these rather
         "B": 5,  # try to experiment with these rather
@@ -951,15 +951,15 @@ if __name__ == "__main__":
         "max_activation": False,
         ###### Track prunning #######
         # here we could set the threshold
-        "pruning_tr": 0.5,
+        "pruning_tr": 0.0005,
     }
     ###########
     #######################################################
 
     save_experiment(
-        "constants",
-        4,
-        "No Constants Active with Below Mean Averaging",
+        "pruning_threshold",
+        12,
+        "Pruning Threshold 0.0005 only Monotone Constant with Below Mean Averaging",
         parameters,
         "/events/minibias/velo_event_",
         5,
