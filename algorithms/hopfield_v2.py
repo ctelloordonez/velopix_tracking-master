@@ -215,7 +215,7 @@ class Hopfield:
 
         if self.p["fully_randomized_updates"]:
             for c in range(len(update_list)):
-                (idx, i) = random.sample(update_list)
+                idx, i = random.sample(update_list, 1)[0]
                 self.update_neuron(idx, i)
 
         else:
@@ -595,8 +595,8 @@ class Hopfield:
                                             max_r = j
                                             max_val = c
                                     self.N[idx, e] = 0
-                                for e in affected_neurons_2:
-                                    self.N[idx + 1, e] = 0
+                                for j in affected_neurons_2:
+                                    self.N[idx + 1, j] = 0
                                 if max_r is not None and max_l is not None:
                                     self.N[idx, max_l] = 1
                                     self.N[idx + 1, max_r] = 1
@@ -810,7 +810,7 @@ def evaluate_events(
     iter_odd = 1
 
     all_events = [i for i in range(995)]
-    # random.seed(40)
+    random.seed(40)
     random.shuffle(all_events)
     count = 0
     j = 0
@@ -931,8 +931,8 @@ if __name__ == "__main__":
         "constant_factor": 0.9,
         "monotone_constant_factor": 0.9,
         #### UPDATE ###
-        "T": 5,  # try to experiment with these rather
-        "B": 5,  # try to experiment with these rather
+        "T": 1e-8,  # try to experiment with these rather
+        "B": 1e-8,  # try to experiment with these rather
         "B_decay": lambda t: max(1e-8, t * 0.04),  # try to remove these
         "T_decay": lambda t: max(1e-8, t * 0.01),  # try to remove these
         "decay_off": False,  # using this
@@ -940,7 +940,7 @@ if __name__ == "__main__":
         "fully_randomized_updates": False,
         #### THRESHOLD ###
         "maxActivation": True,
-        "THRESHOLD": 0.3,
+        "THRESHOLD": 0.005,
         ##### CONVERGENCE ###
         "convergence_threshold": 0.00000005,
         "bootstrap_iters": 10,
@@ -951,18 +951,17 @@ if __name__ == "__main__":
         "max_activation": False,
         ###### Track prunning #######
         # here we could set the threshold
-        "pruning_tr": 0.5,
+        "pruning_tr": 0.005,
     }
     ###########
-    #######################################################
-
+    ########################################################
     save_experiment(
-        "constants",
-        1,
-        "Both Constants Active with Below Mean Averaging",
+        "final_algorithm_assesment",
+        2,
+        "best configuration",
         parameters,
         "/events/minibias/velo_event_",
-        5,
+        100,
     )
     exit()
 
