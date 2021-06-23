@@ -1,42 +1,54 @@
 import math
 
 import numpy as np
+from hdbscan import HDBSCAN
 from sklearn.cluster import AgglomerativeClustering, AffinityPropagation, MeanShift
 from event_model import event_model as em
 
+# Parameters
+distance_threshold = 0.009
+z_shift = -0
+
 
 class Clustering:
-    def __init__(self, event):
+    def __init__(self, event, precomputed_affinity=False):
         self.hits_a = [hit_angles(h) for h in event.hits]
-
         self.hits = event.hits
+        self.precomputed_affinity = precomputed_affinity
 
-    def solve_agglomerative_clustering(self, linkage='single', distance_threshold=0.009):
-        distance_matrix = compute_distances(self.hits)
-        # clusterer = AgglomerativeClustering(n_clusters=None, affinity='l1', linkage=linkage,
-        #                                     distance_threshold=distance_threshold).fit(self.hits_a)
-        clusterer = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='complete',
-                                            distance_threshold=0.01)
-        clusterer.fit_predict(distance_matrix)
+    def solve_agglomerative_clustering(self):
+        if self.precomputed_affinity:
+            distance_matrix = compute_distances(self.hits)
+            clusterer = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='complete',
+                                                distance_threshold=distance_threshold).fit(distance_matrix)
+        else:
+            clusterer = AgglomerativeClustering(n_clusters=None, affinity='euclidean',
+                                                distance_threshold=distance_threshold).fit(self.hits_a)
 
         return self.tracks_from_clusterer(clusterer)
 
     def solve_mean_shift(self):
-        clusterer = MeanShift(bandwidth=0.009, bin_seeding=False, min_bin_freq=3, cluster_all=False, max_iter=1000).fit(self.hits_a)
+        clusterer = MeanShift(bandwidth=0.009, bin_seeding=False,
+                              min_bin_freq=3, cluster_all=False, max_iter=1000).fit(self.hits_a)
         return self.tracks_from_clusterer(clusterer)
 
-    # def solve_hdbscan(self):
-    #     distance_matrix = compute_distances(self.hits)
-    #     clusterer = hdbscan.HDBSCAN(metric='precomputed',min_cluster_size=3)
-    #     clusterer.fit(distance_matrix)
-    #
-    #     return self.tracks_from_clusterer(clusterer)
+    def solve_hdbscan(self):
+        if self.precomputed_affinity:
+            distance_matrix = compute_distances(self.hits)
+            clusterer = HDBSCAN(metric='precomputed', min_cluster_size=3).fit(distance_matrix)
+
+        else:
+            clusterer = HDBSCAN(metric='euclidean', min_cluster_size=3).fit(self.hits_a)
+
+        return self.tracks_from_clusterer(clusterer)
 
     def solve_affinity_propagation(self):
-        # distance_matrix = compute_distances(self.hits)
-        # clusterer = AffinityPropagation(affinity='precomputed', random_state=None) # affinity='precomputed'
-        # clusterer.fit_predict(distance_matrix)
-        clusterer = AffinityPropagation(affinity='euclidean').fit(self.hits_a)
+        if self.precomputed_affinity:
+            distance_matrix = compute_distances(self.hits)
+            clusterer = AffinityPropagation(affinity='precomputed', random_state=None).fit(distance_matrix)
+
+        else:
+            clusterer = AffinityPropagation(affinity='euclidean').fit(self.hits_a)
 
         return self.tracks_from_clusterer(clusterer)
 
@@ -48,23 +60,20 @@ class Clustering:
                 if clusterer.labels_[k] == t:
                     currentTrack.append(self.hits[k])
             tracks.append(em.track(currentTrack))
-        print(len(tracks))
         return tracks
 
 
 def hit_angles(hit):
-    shift=-0
-    # return [math.atan2(hit.y, hit.x), hit.x, hit.y]
     return [math.atan2(hit.y, hit.x),
-            math.atan2(hit.z+shift, hit.y),
-            math.atan2(hit.x, hit.z+shift)]
+            math.atan2(hit.z+z_shift, hit.y),
+            math.atan2(hit.x, hit.z+z_shift)]
 
 
 def compute_distances(hits):
     distanceMatrix = np.empty((len(hits), len(hits)))
     for i in range(len(hits)):
         for j in range(i, len(hits)):
-            distanceMatrix[i][j] = distance8(hits[i], hits[j])
+            distanceMatrix[i][j] = distance(hits[i], hits[j])
             distanceMatrix[j][i] = distanceMatrix[i][j]
     return distanceMatrix
 
