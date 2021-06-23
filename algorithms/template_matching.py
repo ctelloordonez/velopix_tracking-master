@@ -10,8 +10,15 @@ class TemplateMatching:
     def solve(self):
         '********parameters***********'
         # numberOfTemplates =  the number of parts we split the 2 pi range of the polar angle into.
-        numberOfTemplates = 900 # 900 does best on small data set
-        templateArray = np.zeros((numberOfTemplates,52)) # Array to store hit indexes in for template matching
+        numberOfTemplates = 700 # 900 does best on small data set
+
+        #For method 1,2,3: use this template array and comment next out
+        #templateArray = np.zeros((numberOfTemplates,52,1)) # Array to store hit indexes in for template matching
+
+        #For method 4,5 use this template array and comment the above out
+        templateArray = np.zeros((numberOfTemplates,52,1)) # Array to store hit indexes in for template matching
+
+
         '*****************************'
         # In this loop, we give each hit its place in the template matching array
         for i in range(len(self.hits)):
@@ -23,11 +30,22 @@ class TemplateMatching:
            if(indexInArray > numberOfTemplates-1): # floats can go just over the last index in the array
                indexInArray = numberOfTemplates-1
 
+
+
             # we add the hit index +1 in the array at the spot consistent with its polar angle and module number
-           templateArray[indexInArray][self.hits[i].module_number-1] = i+1 #h.id +1 because we start with an array of zero's
-        
+           if templateArray[indexInArray][self.hits[i].module_number-1][0]==0:
+            templateArray[indexInArray][self.hits[i].module_number-1][0] = i+1 #h.id +1 because we start with an array of zero's
+
+           #comment the elif below out for method 1,2,3 (this is for filling in the next instances)
+           elif templateArray[indexInArray][self.hits[i].module_number-1][1]==0:
+            templateArray[indexInArray][
+                   self.hits[i].module_number - 1][1] = i + 1  # h.id +1 because we start with an array of zero's
+
+          # else:
+          #  templateArray[indexInArray][self.hits[i].module_number - 1][2] = i + 1
+
         # Methods that takes the template array, number of templates and the hits and returns the tracks
-        tracks = checkTemplate4(templateArray,numberOfTemplates,self.hits)
+        tracks = checkTemplate3(templateArray,numberOfTemplates,self.hits)
     
         return tracks
 
@@ -122,66 +140,9 @@ def convertToTrack2(listOfHitIDs,hits):
     track = em.track(currentTrack)
     return track
 
-# Checking for templates without allowing skips
-def checkTemplate2(templateArray,numberOfTemplates,hits):
-    tracks = []
-    for t in range(numberOfTemplates):
-        
-        countEven = 0
-        countOdd = 0
-
-        hitIDsEven = []
-        hitIDsOdd = []
-
-        for k in range(52):
-    
-            if(k %2 ==0): # checking even
-                if(templateArray[t,k]!= 0 ):
-                    countEven += 1
-                    index = int(templateArray[t,k]-1)
-                    hitIDsEven.append(hits[index])
-                
-            
-                elif( templateArray[t,k]== 0 and countEven > 0):
-                    if(countEven<3):
-                        countEven = 0
-                        hitIDsEven = []
-                    else:
-                        countEven = 0
-                        # newTrack=convertToTrack2(hitIDsEven,hits)
-                        tracks.append(em.track(hitIDsEven))
-                        hitIDsEven = []
-
-            else:
-                if(templateArray[t,k]!= 0):
-                    countOdd += 1
-                    index = int(templateArray[t,k]-1)
-                    hitIDsOdd.append(hits[index])
-    
-                
-                elif(countOdd> 0 and templateArray[t,k] == 0 ):
-                    if(countOdd<3):
-                        countOdd = 0
-                        hitIDsOdd = []
-                    else:
-                        countOdd = 0
-                        tracks.append(em.track(hitIDsOdd))
-                        hitIDsOdd = []
-                   
-    
-        if(countEven > 2):
-            # newTrack=convertToTrack2(hitIDsEven,hits)
-            tracks.append(em.track(hitIDsEven))
-        if(countOdd > 2):
-            # newTrack = convertToTrack2(hitIDsOdd,hits)
-            tracks.append(em.track(hitIDsOdd))
-           
-        
-    return tracks
-
 
 # Template matching with monotonicity check
-def checkTemplate3(templateArray,numberOfTemplates,hits):
+def checkTemplate2(templateArray,numberOfTemplates,hits):
     tracks = []
     for t in range(numberOfTemplates):
         
@@ -277,7 +238,8 @@ def checkTemplate3(templateArray,numberOfTemplates,hits):
     return tracks
 
 
-def MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
+#This monotonicity check function is used only for method 3
+def MonotonicityCheckEven1Instance(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
     if (countEven <= 1):
         index = int(templateArray[t, k] - 1)
         countEven += 1
@@ -305,8 +267,8 @@ def MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hi
             templateArray[t, k] = 0
 
     return (countEven, hitIDsOdd,templateArray,tracks,hitIDsEven)
-
-def MonotonicityCheckOdd(countOdd,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
+#This monotonicity check function is used only for method 3
+def MonotonicityCheckOdd1Instance(countOdd,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
     if (countOdd <= 1):
         countOdd += 1
         index = int(templateArray[t, k] - 1)
@@ -334,8 +296,10 @@ def MonotonicityCheckOdd(countOdd,index,hitIDsOdd,hits,templateArray,tracks,hitI
             templateArray[t, k] = 0
 
     return((countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven))
+
+
 # Template matching with monotonicity check and multiple angle sections to check
-def checkTemplate4(templateArray, numberOfTemplates, hits):
+def checkTemplate3(templateArray, numberOfTemplates, hits):
     tracks = []
     for t in range(numberOfTemplates):
 
@@ -350,15 +314,15 @@ def checkTemplate4(templateArray, numberOfTemplates, hits):
             if (k % 2 == 0):  # checking even
                 if (templateArray[t, k] != 0):
                     index = int(templateArray[t, k] - 1)
-                    countEven,hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
+                    countEven,hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven1Instance(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
 
                 elif (t < numberOfTemplates - 1 and templateArray[t + 1, k] != 0):  # if no hit was found in t,k  look for hit in t+1,k
                     index = int(templateArray[t + 1, k] - 1)
-                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven1Instance(countEven, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
 
                 elif (t > 0 and templateArray[t - 1, k] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
                     index = int(templateArray[t - 1, k] - 1)
-                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven1Instance(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
 
                 elif (templateArray[t, k] == 0 and countEven > 0):
                     if (countEven < 3):
@@ -374,17 +338,270 @@ def checkTemplate4(templateArray, numberOfTemplates, hits):
             else:
                 if (templateArray[t, k] != 0):
                     index = int(templateArray[t, k] - 1)
-                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd1Instance(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
 
                 elif (t < numberOfTemplates - 1 and templateArray[t + 1, k] != 0):  # if no hit was found in t,k  look for hit in t+1,k
                     index = int(templateArray[t + 1, k] - 1)
-                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd1Instance(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
 
                 elif (t > 0 and templateArray[t - 1, k] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
                     index = int(templateArray[t - 1, k] - 1)
-                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd1Instance(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
 
                 elif (countOdd > 0 and templateArray[t, k] == 0):
+                    if (countOdd < 3):
+                        countOdd = 0
+                        hitIDsOdd = []
+                    else:
+                        countOdd = 0
+                        tracks.append(em.track(hitIDsOdd))
+                        hitIDsOdd = []
+                else:
+                    hitIDsOdd = []
+
+        if (countEven > 2):
+            # newTrack=convertToTrack2(hitIDsEven,hits)
+            tracks.append(em.track(hitIDsEven))
+        if (countOdd > 2):
+            # newTrack = convertToTrack2(hitIDsOdd,hits)
+            tracks.append(em.track(hitIDsOdd))
+
+    return tracks
+
+#This monotonicity check function is used only for method 4 and 5
+def MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
+    if (countEven <= 1):
+        countEven += 1
+        hitIDsEven.append(hits[index])
+        templateArray[t, k][0] = templateArray[t, k][1]
+        # templateArray[t, k][1] = templateArray[t, k][2]
+        # templateArray[t, k][2] = 0
+        templateArray[t, k][1] = 0
+
+
+    else:
+        xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+        yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+        if (xTemp > 0 and yTemp > 0):
+            countEven += 1
+            hitIDsEven.append(hits[index])
+            templateArray[t, k][0] = templateArray[t, k][1]
+            # templateArray[t, k][1] = templateArray[t, k][2]
+            # templateArray[t, k][2] = 0
+            templateArray[t, k][1] = 0
+
+        # from here to the next '#' the monotonicity of the next hit in line is checked, this can be left out
+        #which for now still gives better performance
+        elif templateArray[t,k][1]!=0:
+            index = int(templateArray[t, k][1] - 1)
+            xTemp = (hitIDsEven[0].x - hits[index].x) * (hitIDsEven[0].x - hitIDsEven[1].x)
+            yTemp = (hitIDsEven[0].y - hits[index].y) * (hitIDsEven[0].y - hitIDsEven[1].y)
+            if (xTemp > 0 and yTemp > 0):
+                countEven += 1
+                hitIDsEven.append(hits[index])
+                #templateArray[t, k][1] = templateArray[t, k][2]
+                #templateArray[t, k][2] = 0
+                templateArray[t, k][1] = 0
+        # end of monotonicity check for next hit
+
+
+
+        elif (countEven > 2):
+            countEven = 0
+            tracks.append(em.track(hitIDsEven))
+            hitIDsEven = []
+        else:
+            countEven = 1
+            hitIDsEven = []
+            hitIDsEven.append(hits[index])
+            templateArray[t, k][0] = templateArray[t, k][1]
+            # templateArray[t, k][1] = templateArray[t, k][2]
+            # templateArray[t, k][2] = 0
+            templateArray[t, k][1] = 0
+    return (countEven, hitIDsOdd,templateArray,tracks,hitIDsEven)
+
+
+#This monotonicity check function is used only for method 4 and 5
+def MonotonicityCheckOdd(countOdd,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k):
+    if (countOdd <= 1):
+        countOdd += 1
+        hitIDsOdd.append(hits[index])
+        templateArray[t, k][0] = templateArray[t, k][1]
+        # templateArray[t, k][1] = templateArray[t, k][2]
+        # templateArray[t, k][2] = 0
+        templateArray[t, k][1] = 0
+    else:
+        xTemp = (hitIDsOdd[0].x - hits[index].x) * (hitIDsOdd[0].x - hitIDsOdd[1].x)
+        yTemp = (hitIDsOdd[0].y - hits[index].y) * (hitIDsOdd[0].y - hitIDsOdd[1].y)
+        if (xTemp > 0 and yTemp > 0):
+            countOdd += 1
+            hitIDsOdd.append(hits[index])
+            templateArray[t, k][0] = templateArray[t, k][1]
+            # templateArray[t, k][1] = templateArray[t, k][2]
+            # templateArray[t, k][2] = 0
+            templateArray[t, k][1] = 0
+
+        # from here to the next '#' the monotonicity of the next hit in line is checked, this can be left out
+        #which for now still gives better performance
+        elif templateArray[t,k][1]!=0:
+            index = int(templateArray[t, k][1] - 1)
+            xTemp = (hitIDsOdd[0].x - hits[index].x) * (hitIDsOdd[0].x - hitIDsOdd[1].x)
+            yTemp = (hitIDsOdd[0].y - hits[index].y) * (hitIDsOdd[0].y - hitIDsOdd[1].y)
+            if (xTemp > 0 and yTemp > 0):
+                countOdd += 1
+                hitIDsOdd.append(hits[index])
+                #templateArray[t, k][1] = templateArray[t, k][2]
+                #templateArray[t, k][2] = 0
+                templateArray[t, k][1] = 0
+        #end point of monotonicity check for second in line
+
+        elif countOdd > 2:
+            countOdd = 0
+            tracks.append(em.track(hitIDsEven))
+            hitIDsOdd = []
+
+        else:
+            countOdd = 1
+            hitIDsOdd = []
+            hitIDsOdd.append(hits[index])
+            templateArray[t, k][0] = templateArray[t, k][1]
+            # templateArray[t, k][1] = templateArray[t, k][2]
+            # templateArray[t, k][2] = 0
+            templateArray[t, k][1] = 0
+
+
+    return((countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven))
+
+# Template matching with monotonicity check and multiple angle sections to check
+def checkTemplate4(templateArray, numberOfTemplates, hits):
+    tracks = []
+    for t in range(numberOfTemplates):
+
+        countEven = 0
+        countOdd = 0
+
+        hitIDsEven = []
+        hitIDsOdd = []
+
+        for k in range(52):
+
+            if (k % 2 == 0):  # checking even
+                if (templateArray[t, k][0] != 0):
+                    index = int(templateArray[t, k][0] - 1)
+                    countEven,hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
+
+                elif (t < numberOfTemplates - 1 and templateArray[t + 1, k][0] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    index = int(templateArray[t + 1, k][0] - 1)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+
+                elif (t > 0 and templateArray[t - 1, k][0] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    index = int(templateArray[t - 1, k][0] - 1)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+
+                elif (templateArray[t, k][0] == 0 and countEven > 0):
+                    if (countEven < 3):
+                        countEven = 0
+                        hitIDsEven = []
+                    else:
+                        countEven = 0
+                        tracks.append(em.track(hitIDsEven))
+                        hitIDsEven = []
+                else:
+                    hitIDsEven = []
+
+            else:
+                if (templateArray[t, k][0] != 0):
+                    index = int(templateArray[t, k][0] - 1)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
+
+                elif (t < numberOfTemplates - 1 and templateArray[t + 1, k][0] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    index = int(templateArray[t + 1, k][0] - 1)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+
+                elif (t > 0 and templateArray[t - 1, k][0] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    index = int(templateArray[t - 1, k][0] - 1)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+
+                elif (countOdd > 0 and templateArray[t, k][0] == 0):
+                    if (countOdd < 3):
+                        countOdd = 0
+                        hitIDsOdd = []
+                    else:
+                        countOdd = 0
+                        tracks.append(em.track(hitIDsOdd))
+                        hitIDsOdd = []
+                else:
+                    hitIDsOdd = []
+
+        if (countEven > 2):
+            # newTrack=convertToTrack2(hitIDsEven,hits)
+            tracks.append(em.track(hitIDsEven))
+        if (countOdd > 2):
+            # newTrack = convertToTrack2(hitIDsOdd,hits)
+            tracks.append(em.track(hitIDsOdd))
+
+    return tracks
+
+#this method checks 4 neighbours and 2 instances
+def checkTemplate5(templateArray, numberOfTemplates, hits):
+    tracks = []
+    for t in range(numberOfTemplates):
+
+        countEven = 0
+        countOdd = 0
+
+        hitIDsEven = []
+        hitIDsOdd = []
+
+        for k in range(52):
+
+            if (k % 2 == 0):  # checking even
+                if (templateArray[t, k][0] != 0):
+                    index = int(templateArray[t, k][0] - 1)
+                    countEven,hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
+
+                elif (t < numberOfTemplates - 1 and templateArray[t + 1, k][0] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    index = int(templateArray[t + 1, k][0] - 1)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+
+                elif (t > 0 and templateArray[t - 1, k][0] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    index = int(templateArray[t - 1, k][0] - 1)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+
+                elif (t < numberOfTemplates - 2 and templateArray[t + 2, k][0] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    index = int(templateArray[t + 2, k][0] - 1)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+
+
+                elif (t > 1 and templateArray[t - 2, k][0] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    index = int(templateArray[t - 2, k][0] - 2)
+                    countEven, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckEven(countEven,index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+
+                elif (templateArray[t, k][0] == 0 and countEven > 0):
+                    if (countEven < 3):
+                        countEven = 0
+                        hitIDsEven = []
+                    else:
+                        countEven = 0
+                        tracks.append(em.track(hitIDsEven))
+                        hitIDsEven = []
+                else:
+                    hitIDsEven = []
+
+            else:
+                if (templateArray[t, k][0] != 0):
+                    index = int(templateArray[t, k][0] - 1)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t,k)
+
+                elif (t < numberOfTemplates - 1 and templateArray[t + 1, k][0] != 0):  # if no hit was found in t,k  look for hit in t+1,k
+                    index = int(templateArray[t + 1, k][0] - 1)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t+1,k)
+
+                elif (t > 0 and templateArray[t - 1, k][0] != 0):  # if no hit was found in t,k or t+1,k, look for hit in t-1,k
+                    index = int(templateArray[t - 1, k][0] - 1)
+                    countOdd, hitIDsOdd,templateArray,tracks,hitIDsEven=MonotonicityCheckOdd(countOdd, index,hitIDsOdd,hits,templateArray,tracks,hitIDsEven,t-1,k)
+
+                elif (countOdd > 0 and templateArray[t, k][0] == 0):
                     if (countOdd < 3):
                         countOdd = 0
                         hitIDsOdd = []
