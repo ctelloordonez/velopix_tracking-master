@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.patches as mpatches
@@ -86,7 +86,7 @@ def print_clustered_2d(event, tracks=[], bins=[], x=2, y=0, track_color=0, filen
     plt.scatter(
       [h[x] for h in bin],
       [h[y] for h in bin],
-      color=colors[b * 2],
+      color=colors[b * 2 % len(colors)],
       s=2 * scale
     )
 
@@ -228,3 +228,72 @@ def print_event_2d(event, tracks=[], x=2, y=0, track_color=0, filename="visual.p
     plt.close()
   else:
     plt.show()
+
+
+def print_event_evaluation_3d(event, real_tracks=[], found_tracks=[], filename="visual.png", save_to_file=False):
+    """
+    A function to evaluate events. It produces a 3D plot
+    and either prints or saves it to a file.
+
+    Arguments
+    ---------
+
+    event : the event to be printed
+    real_tracks : tracks from the event to print
+    found_tracks : tracks found by reconstruction algorithm to print
+    save_to_file : switches between saving output to file or showing it (default)
+    filename : file where to save visualization
+    """
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+
+    found_real_color = '#00833D'
+    real_color = '#FF2900'
+    noise_color = '#000000'
+
+    hits_in_real = [h for t in real_tracks for h in t.hits]
+    hits_in_found = [h for t in found_tracks for h in t.hits]
+
+    ax.scatter3D(
+      [h.z for h in hits_in_real if h not in hits_in_found],
+      [h.x for h in hits_in_real if h not in hits_in_found],
+      [h.y for h in hits_in_real if h not in hits_in_found],
+      color=real_color,
+      s=2 * scale
+    )
+
+    ax.scatter3D(
+      [h.z for h in hits_in_found if h in hits_in_real],
+      [h.x for h in hits_in_found if h in hits_in_real],
+      [h.y for h in hits_in_found if h in hits_in_real],
+      color=found_real_color,
+      s=2 * scale
+    )
+
+    ax.scatter3D(
+      [h.z for h in hits_in_found if h not in hits_in_real],
+      [h.x for h in hits_in_found if h not in hits_in_real],
+      [h.y for h in hits_in_found if h not in hits_in_real],
+      color=noise_color,
+      s=2 * scale
+    )
+
+    # for t in tracks:
+    #     ax.plot(
+    #       [h.z for h in t.hits],
+    #       [h.x for h in t.hits],
+    #       [h.y for h in t.hits],
+    #       color=real,
+    #       linewidth=1
+    #     )
+
+    plt.tick_params(axis='both', which='major', labelsize=4*scale)
+    ax.set_xlabel('Z', fontdict={'fontsize': 4*scale})
+    ax.set_ylabel('X', fontdict={'fontsize': 4*scale})
+    ax.set_zlabel('Y', fontdict={'fontsize': 4*scale})
+
+    if save_to_file:
+        plt.savefig(filename, bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+    else:
+        plt.show()

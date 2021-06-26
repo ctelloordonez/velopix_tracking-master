@@ -282,6 +282,7 @@ def ghost_rate(t2p):
     nghosts = len(ghosts(t2p))
     return float(nghosts)/ntracks, nghosts
 
+
 def validate_print(events_json_data, tracks_list):
     tracking_data = []
     for event, tracks in zip(events_json_data, tracks_list):
