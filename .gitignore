@@ -154,4 +154,6 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-run_track_reconstruction.py
+
+# mac folder files
+.DS_Store
